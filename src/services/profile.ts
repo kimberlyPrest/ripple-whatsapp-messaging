@@ -5,6 +5,7 @@ export type ProfileData = {
   name: string | null;
   email: string | null;
   avatar_url: string | null;
+  webhook_url: string | null;
   created_at?: string;
 };
 
@@ -22,7 +23,7 @@ export const profileService = {
 
   async update(
     userId: string,
-    data: { name?: string; avatar_url?: string | null },
+    data: { name?: string; avatar_url?: string | null; webhook_url?: string | null },
   ) {
     const { error } = await supabase
       .from("profiles")

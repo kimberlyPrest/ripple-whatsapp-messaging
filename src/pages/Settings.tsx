@@ -32,6 +32,7 @@ const profileFormSchema = z.object({
     message: "O nome deve ter pelo menos 2 caracteres.",
   }),
   email: z.string().email(),
+  webhook_url: z.string().url("A URL do webhook deve ser válida.").nullable().or(z.literal("")),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -49,6 +50,7 @@ export default function Settings() {
     defaultValues: {
       name: "",
       email: "",
+      webhook_url: "",
     },
     mode: "onChange",
   });
@@ -63,6 +65,7 @@ export default function Settings() {
           form.reset({
             name: profile.name || "",
             email: user.email || "",
+            webhook_url: (profile as any).webhook_url || "",
           });
           if (profile.avatar_url) {
             setPreviewUrl(profile.avatar_url);
@@ -71,6 +74,7 @@ export default function Settings() {
           form.reset({
             name: "",
             email: user.email || "",
+            webhook_url: "",
           });
         }
       } catch (error) {
@@ -122,6 +126,7 @@ export default function Settings() {
 
       await profileService.update(user.id, {
         name: data.name,
+        webhook_url: data.webhook_url || null,
         ...(avatarUrl && { avatar_url: avatarUrl }),
       });
 
@@ -148,12 +153,12 @@ export default function Settings() {
 
   const userInitials = form.getValues("name")
     ? form
-        .getValues("name")
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .getValues("name")
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : user.email?.substring(0, 2).toUpperCase();
 
   return (
@@ -260,6 +265,27 @@ export default function Settings() {
                           </FormControl>
                           <FormDescription>
                             O email não pode ser alterado diretamente.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="webhook_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>URL do Webhook</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://seu-webhook.com"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            URL para onde as mensagens do WhatsApp serão enviadas.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
