@@ -1,4 +1,4 @@
-import { CampaignMessage } from '@/services/campaigns'
+import { CampaignMessage } from "@/services/campaigns";
 import {
   Table,
   TableBody,
@@ -6,16 +6,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+} from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   RefreshCw,
   CheckCircle2,
@@ -23,15 +23,15 @@ import {
   Clock,
   AlertCircle,
   MessageSquareOff,
-} from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+} from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface CampaignMessagesTableProps {
-  messages: CampaignMessage[]
-  onRetry: (id: string) => void
-  loadingId: string | null
-  isLoading?: boolean
+  messages: CampaignMessage[];
+  onRetry: (id: string) => void;
+  loadingId: string | null;
+  isLoading?: boolean;
 }
 
 export function CampaignMessagesTable({
@@ -42,36 +42,36 @@ export function CampaignMessagesTable({
 }: CampaignMessagesTableProps) {
   const getStatusInfo = (msg: CampaignMessage) => {
     switch (msg.status) {
-      case 'sent':
+      case "sent":
         return {
-          label: 'Enviado',
+          label: "Enviado",
           color:
-            'bg-green-100 text-green-700 hover:bg-green-200 border-green-200',
+            "bg-green-100 text-green-700 hover:bg-green-200 border-green-200",
           icon: <CheckCircle2 className="h-3 w-3 mr-1" />,
-        }
-      case 'failed':
-      case 'error':
+        };
+      case "failed":
+      case "error":
         return {
-          label: 'Falha',
-          color: 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200',
+          label: "Falha",
+          color: "bg-red-100 text-red-700 hover:bg-red-200 border-red-200",
           icon: <XCircle className="h-3 w-3 mr-1" />,
-        }
-      case 'aguardando':
-      case 'pending':
+        };
+      case "aguardando":
+      case "pending":
         return {
-          label: 'Aguardando',
+          label: "Aguardando",
           color:
-            'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200',
+            "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200",
           icon: <Clock className="h-3 w-3 mr-1" />,
-        }
+        };
       default:
         return {
           label: msg.status,
-          color: 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200',
+          color: "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200",
           icon: <AlertCircle className="h-3 w-3 mr-1" />,
-        }
+        };
     }
-  }
+  };
 
   return (
     <div className="rounded-md border bg-card">
@@ -113,15 +113,16 @@ export function CampaignMessagesTable({
             </TableRow>
           ) : (
             messages.map((msg) => {
-              const statusInfo = getStatusInfo(msg)
-              const isFailed = msg.status === 'failed' || msg.status === 'error'
+              const statusInfo = getStatusInfo(msg);
+              const isFailed =
+                msg.status === "failed" || msg.status === "error";
 
               return (
                 <TableRow key={msg.id}>
                   <TableCell className="font-medium">
-                    {msg.contacts?.name || 'Desconhecido'}
+                    {msg.contacts?.name || "Desconhecido"}
                   </TableCell>
-                  <TableCell>{msg.contacts?.phone || '-'}</TableCell>
+                  <TableCell>{msg.contacts?.phone || "-"}</TableCell>
                   <TableCell>
                     <TooltipProvider>
                       <Tooltip delayDuration={0}>
@@ -135,12 +136,12 @@ export function CampaignMessagesTable({
                           </Badge>
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs">
-                          {msg.status === 'sent' && msg.sent_at ? (
+                          {msg.status === "sent" && msg.sent_at ? (
                             <p>
-                              Enviado em:{' '}
+                              Enviado em:{" "}
                               {format(
                                 new Date(msg.sent_at),
-                                'dd/MM/yyyy HH:mm:ss',
+                                "dd/MM/yyyy HH:mm:ss",
                                 { locale: ptBR },
                               )}
                             </p>
@@ -177,11 +178,11 @@ export function CampaignMessagesTable({
                     )}
                   </TableCell>
                 </TableRow>
-              )
+              );
             })
           )}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

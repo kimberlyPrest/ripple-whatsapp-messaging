@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { Loader2 } from 'lucide-react'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -18,24 +18,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Contact, contactsService } from '@/services/contacts'
-import { toast } from 'sonner'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Contact, contactsService } from "@/services/contacts";
+import { toast } from "sonner";
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório'),
-  phone: z.string().min(1, 'Telefone é obrigatório'),
-  message: z.string().min(1, 'Mensagem é obrigatória'),
-})
+  name: z.string().min(1, "Nome é obrigatório"),
+  phone: z.string().min(1, "Telefone é obrigatório"),
+  message: z.string().min(1, "Mensagem é obrigatória"),
+});
 
 interface EditContactDialogProps {
-  contact: Contact | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
+  contact: Contact | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
 export function EditContactDialog({
@@ -44,38 +44,38 @@ export function EditContactDialog({
   onOpenChange,
   onSuccess,
 }: EditContactDialogProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: contact?.name || '',
-      phone: contact?.phone || '',
-      message: contact?.message || '',
+      name: contact?.name || "",
+      phone: contact?.phone || "",
+      message: contact?.message || "",
     },
     values: {
-      name: contact?.name || '',
-      phone: contact?.phone || '',
-      message: contact?.message || '',
+      name: contact?.name || "",
+      phone: contact?.phone || "",
+      message: contact?.message || "",
     },
-  })
+  });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!contact) return
+    if (!contact) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await contactsService.update(contact.id, values)
-      toast.success('Contato atualizado com sucesso')
-      onSuccess()
-      onOpenChange(false)
+      await contactsService.update(contact.id, values);
+      toast.success("Contato atualizado com sucesso");
+      onSuccess();
+      onOpenChange(false);
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao atualizar contato')
+      console.error(error);
+      toast.error("Erro ao atualizar contato");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -142,5 +142,5 @@ export function EditContactDialog({
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

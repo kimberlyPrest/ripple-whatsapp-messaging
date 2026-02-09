@@ -1,29 +1,29 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Send, Clock, AlertTriangle, Timer } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Send, Clock, AlertTriangle, Timer } from "lucide-react";
 
 interface CampaignKPIsProps {
   stats: {
-    sent: number
-    waiting: number
-    failed: number
-    elapsed: number
-  }
-  isLoading?: boolean
+    sent: number;
+    waiting: number;
+    failed: number;
+    elapsed: number;
+  };
+  isLoading?: boolean;
 }
 
 export function CampaignKPIs({ stats, isLoading = false }: CampaignKPIsProps) {
   const formatTime = (seconds: number) => {
-    if (seconds < 60) return `${Math.round(seconds)}s`
-    const minutes = Math.floor(seconds / 60)
-    const remSeconds = Math.round(seconds % 60)
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remSeconds = Math.round(seconds % 60);
     if (minutes > 60) {
-      const hours = Math.floor(minutes / 60)
-      const remMin = minutes % 60
-      return `${hours}h ${remMin}m`
+      const hours = Math.floor(minutes / 60);
+      const remMin = minutes % 60;
+      return `${hours}h ${remMin}m`;
     }
-    return `${minutes}m ${remSeconds}s`
-  }
+    return `${minutes}m ${remSeconds}s`;
+  };
 
   if (isLoading) {
     return (
@@ -41,7 +41,7 @@ export function CampaignKPIs({ stats, isLoading = false }: CampaignKPIsProps) {
           </Card>
         ))}
       </div>
-    )
+    );
   }
 
   return (
@@ -90,5 +90,5 @@ export function CampaignKPIs({ stats, isLoading = false }: CampaignKPIsProps) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

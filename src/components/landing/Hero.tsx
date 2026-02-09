@@ -1,6 +1,6 @@
-import { Button } from '@/components/ui/button'
-import { PlayCircle, ArrowRight, MoreHorizontal } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Button } from "@/components/ui/button";
+import { PlayCircle, ArrowRight, MoreHorizontal } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function Hero() {
   return (
@@ -15,10 +15,10 @@ export function Hero() {
 
           {/* Headline */}
           <h1 className="font-manrope font-extrabold text-4xl md:text-5xl lg:text-6xl text-slate-900 leading-tight mb-6 animate-fade-in-up delay-100">
-            Transforme suas listas em{' '}
+            Transforme suas listas em{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0da540] to-[#13ec5b]">
               resultados reais
-            </span>{' '}
+            </span>{" "}
             no WhatsApp
           </h1>
 
@@ -128,5 +128,5 @@ export function Hero() {
         </div>
       </div>
     </section>
-  )
+  );
 }

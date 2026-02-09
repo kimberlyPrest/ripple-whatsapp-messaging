@@ -1,30 +1,30 @@
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { Clock, CheckCircle2, List, Loader2, ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Clock, CheckCircle2, List, Loader2, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { ScheduleConfig, ScheduledMessage } from '@/lib/campaign-utils'
-import { Contact } from '@/services/contacts'
+} from "@/components/ui/accordion";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScheduleConfig, ScheduledMessage } from "@/lib/campaign-utils";
+import { Contact } from "@/services/contacts";
 
 interface CampaignConfirmationStepProps {
-  schedule: ScheduledMessage[]
-  contacts: (Contact | undefined)[]
-  config: ScheduleConfig
-  onBack: () => void
-  onConfirm: () => void
-  isLoading: boolean
+  schedule: ScheduledMessage[];
+  contacts: (Contact | undefined)[];
+  config: ScheduleConfig;
+  onBack: () => void;
+  onConfirm: () => void;
+  isLoading: boolean;
 }
 
 export function CampaignConfirmationStep({
@@ -36,7 +36,7 @@ export function CampaignConfirmationStep({
   isLoading,
 }: CampaignConfirmationStepProps) {
   const endTime =
-    schedule.length > 0 ? schedule[schedule.length - 1].sendTime : new Date()
+    schedule.length > 0 ? schedule[schedule.length - 1].sendTime : new Date();
 
   return (
     <div className="space-y-6">
@@ -82,15 +82,15 @@ export function CampaignConfirmationStep({
               <span className="font-medium">
                 {config.useBatching
                   ? `${config.batchSize} msgs / ${config.batchPauseMin}-${config.batchPauseMax}s`
-                  : 'Desativado'}
+                  : "Desativado"}
               </span>
             </div>
             {config.automaticPause && (
               <div className="col-span-1 sm:col-span-2 text-blue-600 dark:text-blue-400">
                 <span className="text-muted-foreground">Pausa Agendada: </span>
                 <span className="font-medium">
-                  Pausa às {config.pauseTime} e retoma dia{' '}
-                  {config.resumeDate && format(config.resumeDate, 'dd/MM')} às{' '}
+                  Pausa às {config.pauseTime} e retoma dia{" "}
+                  {config.resumeDate && format(config.resumeDate, "dd/MM")} às{" "}
                   {config.resumeTime}
                 </span>
               </div>
@@ -98,11 +98,11 @@ export function CampaignConfirmationStep({
             <div className="col-span-1 sm:col-span-2">
               <span className="text-muted-foreground">Horário Comercial: </span>
               <span
-                className={`font-medium ${config.businessHoursStrategy === 'ignore' ? 'text-amber-600' : 'text-green-600'}`}
+                className={`font-medium ${config.businessHoursStrategy === "ignore" ? "text-amber-600" : "text-green-600"}`}
               >
-                {config.businessHoursStrategy === 'ignore'
-                  ? 'Ignorar'
-                  : 'Pausar diariamente'}
+                {config.businessHoursStrategy === "ignore"
+                  ? "Ignorar"
+                  : "Pausar diariamente"}
               </span>
             </div>
           </div>
@@ -122,14 +122,14 @@ export function CampaignConfirmationStep({
               <div className="space-y-2">
                 {schedule.map((item, idx) => {
                   const contact = contacts[item.contactIndex] || {
-                    name: 'Desconhecido',
-                    phone: '?',
-                    id: '?',
-                    created_at: '',
-                    message: '',
-                    user_id: '',
-                    status: '',
-                  }
+                    name: "Desconhecido",
+                    phone: "?",
+                    id: "?",
+                    created_at: "",
+                    message: "",
+                    user_id: "",
+                    status: "",
+                  };
                   return (
                     <div
                       key={idx}
@@ -142,10 +142,10 @@ export function CampaignConfirmationStep({
                         {contact.name}
                       </span>
                       <span className="text-muted-foreground text-xs whitespace-nowrap">
-                        {format(item.sendTime, 'dd/MM/yyyy HH:mm:ss')}
+                        {format(item.sendTime, "dd/MM/yyyy HH:mm:ss")}
                       </span>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </ScrollArea>
@@ -168,5 +168,5 @@ export function CampaignConfirmationStep({
         </Button>
       </DialogFooter>
     </div>
-  )
+  );
 }

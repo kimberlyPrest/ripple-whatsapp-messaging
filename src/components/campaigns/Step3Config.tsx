@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -15,12 +15,12 @@ import {
   AlertTriangle,
   Info,
   CalendarClock,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
@@ -29,21 +29,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+} from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -51,22 +51,22 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { campaignsService, Campaign } from '@/services/campaigns'
-import { toast } from 'sonner'
+} from "@/components/ui/breadcrumb";
+import { campaignsService, Campaign } from "@/services/campaigns";
+import { toast } from "sonner";
 
 const formSchema = z
   .object({
-    name: z.string().min(1, 'Nome da campanha é obrigatório'),
+    name: z.string().min(1, "Nome da campanha é obrigatório"),
     minInterval: z.coerce
       .number()
-      .min(1, 'Mínimo de 1 segundo')
-      .max(3600, 'Máximo de 1 hora'),
+      .min(1, "Mínimo de 1 segundo")
+      .max(3600, "Máximo de 1 hora"),
     maxInterval: z.coerce
       .number()
-      .min(1, 'Mínimo de 1 segundo')
-      .max(3600, 'Máximo de 1 hora'),
-    scheduleType: z.enum(['immediate', 'scheduled']),
+      .min(1, "Mínimo de 1 segundo")
+      .max(3600, "Máximo de 1 hora"),
+    scheduleType: z.enum(["immediate", "scheduled"]),
     scheduledDate: z.date().optional(),
     scheduledTime: z.string().optional(),
 
@@ -75,7 +75,7 @@ const formSchema = z
     batchPauseMin: z.coerce.number().optional(),
     batchPauseMax: z.coerce.number().optional(),
 
-    businessHoursStrategy: z.enum(['ignore', 'pause']).default('ignore'),
+    businessHoursStrategy: z.enum(["ignore", "pause"]).default("ignore"),
 
     // New Automatic Pause fields
     automaticPause: z.boolean().default(false),
@@ -84,71 +84,71 @@ const formSchema = z
     resumeTime: z.string().optional(),
   })
   .refine((data) => data.maxInterval >= data.minInterval, {
-    message: 'Intervalo máximo deve ser maior ou igual ao mínimo',
-    path: ['maxInterval'],
+    message: "Intervalo máximo deve ser maior ou igual ao mínimo",
+    path: ["maxInterval"],
   })
   .refine(
     (data) => {
-      if (data.scheduleType === 'scheduled') {
-        return !!data.scheduledDate && !!data.scheduledTime
+      if (data.scheduleType === "scheduled") {
+        return !!data.scheduledDate && !!data.scheduledTime;
       }
-      return true
+      return true;
     },
     {
-      message: 'Data e hora são obrigatórios para agendamento',
-      path: ['scheduledDate'],
+      message: "Data e hora são obrigatórios para agendamento",
+      path: ["scheduledDate"],
     },
   )
   .refine(
     (data) => {
       if (data.useBatching) {
-        if (!data.batchSize || data.batchSize < 1) return false
-        if (!data.batchPauseMin || data.batchPauseMin < 1) return false
+        if (!data.batchSize || data.batchSize < 1) return false;
+        if (!data.batchPauseMin || data.batchPauseMin < 1) return false;
         if (!data.batchPauseMax || data.batchPauseMax < data.batchPauseMin)
-          return false
+          return false;
       }
-      return true
+      return true;
     },
     {
-      message: 'Configuração de lote inválida',
-      path: ['batchSize'],
+      message: "Configuração de lote inválida",
+      path: ["batchSize"],
     },
   )
   .refine(
     (data) => {
       if (data.automaticPause) {
-        return !!data.pauseTime && !!data.resumeDate && !!data.resumeTime
+        return !!data.pauseTime && !!data.resumeDate && !!data.resumeTime;
       }
-      return true
+      return true;
     },
     {
-      message: 'Preencha todos os campos da pausa automática',
-      path: ['pauseTime'],
+      message: "Preencha todos os campos da pausa automática",
+      path: ["pauseTime"],
     },
-  )
+  );
 
 export interface Step3ConfigValues {
-  name: string
-  minInterval: number
-  maxInterval: number
-  scheduleType: 'immediate' | 'scheduled'
-  scheduledDate?: Date
-  scheduledTime?: string
-  useBatching: boolean
-  batchSize?: number
-  batchPauseMin?: number
-  batchPauseMax?: number
-  businessHoursStrategy: 'ignore' | 'pause'
-  automaticPause: boolean
-  pauseTime?: string
-  resumeDate?: Date
-  resumeTime?: string
+  name: string;
+  minInterval: number;
+  maxInterval: number;
+  scheduleType: "immediate" | "scheduled";
+  scheduledDate?: Date;
+  scheduledTime?: string;
+  useBatching: boolean;
+  batchSize?: number;
+  batchPauseMin?: number;
+  batchPauseMax?: number;
+  businessHoursStrategy: "ignore" | "pause";
+  automaticPause: boolean;
+  pauseTime?: string;
+  resumeDate?: Date;
+  resumeTime?: string;
 }
 
 interface Step3ConfigProps {
-  campaignId: string
-  onBack: () => void
-  onFinish: (values: Step3ConfigValues) => Promise<void>
+  campaignId: string;
+  onBack: () => void;
+  onFinish: (values: Step3ConfigValues) => Promise<void>;
 }
 
 export function Step3Config({
@@ -156,88 +156,88 @@ export function Step3Config({
   onBack,
   onFinish,
 }: Step3ConfigProps) {
-  const [loading, setLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
+      name: "",
       minInterval: 15,
       maxInterval: 30,
-      scheduleType: 'immediate',
+      scheduleType: "immediate",
       useBatching: false,
       batchSize: 20,
       batchPauseMin: 60,
       batchPauseMax: 120,
-      businessHoursStrategy: 'ignore',
+      businessHoursStrategy: "ignore",
       automaticPause: false,
     },
-  })
+  });
 
   // Load campaign data
   useEffect(() => {
     async function loadCampaign() {
       try {
-        const data = await campaignsService.getById(campaignId)
-        setCampaign(data)
-        form.setValue('name', data.name)
+        const data = await campaignsService.getById(campaignId);
+        setCampaign(data);
+        form.setValue("name", data.name);
 
         if (data.config) {
           // We can map config here if needed for editing
         }
       } catch (error) {
-        console.error(error)
-        toast.error('Erro ao carregar dados da campanha')
+        console.error(error);
+        toast.error("Erro ao carregar dados da campanha");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
-    loadCampaign()
-  }, [campaignId, form])
+    loadCampaign();
+  }, [campaignId, form]);
 
-  const watchedValues = form.watch()
-  const { minInterval, maxInterval } = watchedValues
+  const watchedValues = form.watch();
+  const { minInterval, maxInterval } = watchedValues;
 
   const calculateEstimatedTime = () => {
-    if (!campaign?.total_messages) return 'Calculando...'
+    if (!campaign?.total_messages) return "Calculando...";
 
-    const count = campaign.total_messages
-    const avgInterval = (Number(minInterval) + Number(maxInterval)) / 2
-    const totalSeconds = avgInterval * count
+    const count = campaign.total_messages;
+    const avgInterval = (Number(minInterval) + Number(maxInterval)) / 2;
+    const totalSeconds = avgInterval * count;
 
-    if (totalSeconds < 60) return `${Math.ceil(totalSeconds)} seg`
+    if (totalSeconds < 60) return `${Math.ceil(totalSeconds)} seg`;
 
-    const minutes = Math.floor(totalSeconds / 60)
-    const seconds = Math.ceil(totalSeconds % 60)
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.ceil(totalSeconds % 60);
 
     if (minutes > 60) {
-      const hours = Math.floor(minutes / 60)
-      const remMinutes = minutes % 60
-      return `~ ${hours}h ${remMinutes}m`
+      const hours = Math.floor(minutes / 60);
+      const remMinutes = minutes % 60;
+      return `~ ${hours}h ${remMinutes}m`;
     }
 
-    return `~ ${minutes.toString().padStart(2, '0')} min ${seconds.toString().padStart(2, '0')} seg`
-  }
+    return `~ ${minutes.toString().padStart(2, "0")} min ${seconds.toString().padStart(2, "0")} seg`;
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      await onFinish(values as Step3ConfigValues)
+      await onFinish(values as Step3ConfigValues);
     } catch (error) {
-      console.error(error)
+      console.error(error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex h-60 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   return (
@@ -290,10 +290,10 @@ export function Step3Config({
                   </p>
                   <p className="flex items-center gap-2">
                     <Info className="h-4 w-4 shrink-0" />O disparo será enviado
-                    para os{' '}
+                    para os{" "}
                     <strong className="font-semibold">
                       {campaign?.total_messages || 0} contatos
-                    </strong>{' '}
+                    </strong>{" "}
                     selecionados no passo anterior.
                   </p>
                 </div>
@@ -437,7 +437,7 @@ export function Step3Config({
                   )}
                 />
 
-                {form.watch('scheduleType') === 'scheduled' && (
+                {form.watch("scheduleType") === "scheduled" && (
                   <div className="grid grid-cols-2 gap-4 animate-fade-in-down">
                     <FormField
                       control={form.control}
@@ -449,14 +449,14 @@ export function Step3Config({
                             <PopoverTrigger asChild>
                               <FormControl>
                                 <Button
-                                  variant={'outline'}
+                                  variant={"outline"}
                                   className={cn(
-                                    'w-full pl-3 text-left font-normal',
-                                    !field.value && 'text-muted-foreground',
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground",
                                   )}
                                 >
                                   {field.value ? (
-                                    format(field.value, 'PPP', { locale: ptBR })
+                                    format(field.value, "PPP", { locale: ptBR })
                                   ) : (
                                     <span>Selecione</span>
                                   )}
@@ -530,7 +530,7 @@ export function Step3Config({
                 )}
               />
             </CardHeader>
-            {form.watch('useBatching') && (
+            {form.watch("useBatching") && (
               <CardContent className="pt-4 animate-fade-in-down">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
@@ -611,7 +611,7 @@ export function Step3Config({
                 )}
               />
             </CardHeader>
-            {form.watch('automaticPause') && (
+            {form.watch("automaticPause") && (
               <CardContent className="pt-4 animate-fade-in-down">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <FormField
@@ -641,14 +641,14 @@ export function Step3Config({
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
-                                variant={'outline'}
+                                variant={"outline"}
                                 className={cn(
-                                  'w-full pl-3 text-left font-normal',
-                                  !field.value && 'text-muted-foreground',
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground",
                                 )}
                               >
                                 {field.value ? (
-                                  format(field.value, 'PPP', { locale: ptBR })
+                                  format(field.value, "PPP", { locale: ptBR })
                                 ) : (
                                   <span>Selecione uma data</span>
                                 )}
@@ -733,7 +733,7 @@ export function Step3Config({
                         </FormItem>
                       </RadioGroup>
                     </FormControl>
-                    {field.value === 'ignore' && (
+                    {field.value === "ignore" && (
                       <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3" />
                         Risco aumentado de bloqueio ao enviar mensagens fora do
@@ -775,5 +775,5 @@ export function Step3Config({
         </form>
       </Form>
     </div>
-  )
+  );
 }

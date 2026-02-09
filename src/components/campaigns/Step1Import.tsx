@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef } from "react";
 import {
   FileSpreadsheet,
   Upload as UploadIcon,
@@ -6,16 +6,16 @@ import {
   ArrowRight,
   Loader2,
   FileIcon,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -23,95 +23,95 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { toast } from 'sonner'
-import { parseCSV } from '@/lib/csv'
+} from "@/components/ui/table";
+import { toast } from "sonner";
+import { parseCSV } from "@/lib/csv";
 
 interface Step1ImportProps {
-  onNext: (contacts: any[], filename: string) => void
-  isProcessing: boolean
+  onNext: (contacts: any[], filename: string) => void;
+  isProcessing: boolean;
 }
 
 export function Step1Import({ onNext, isProcessing }: Step1ImportProps) {
-  const [file, setFile] = useState<File | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (selectedFile: File) => {
     const fileExtension =
-      '.' + selectedFile.name.split('.').pop()?.toLowerCase()
-    const validExtensions = ['.xlsx', '.xls', '.csv']
+      "." + selectedFile.name.split(".").pop()?.toLowerCase();
+    const validExtensions = [".xlsx", ".xls", ".csv"];
 
     if (validExtensions.includes(fileExtension)) {
-      if (fileExtension === '.xlsx' || fileExtension === '.xls') {
+      if (fileExtension === ".xlsx" || fileExtension === ".xls") {
         // Show as selected but warn about processing
-        setFile(selectedFile)
-        toast.warning('Suporte a Excel em desenvolvimento', {
+        setFile(selectedFile);
+        toast.warning("Suporte a Excel em desenvolvimento", {
           description:
-            'No momento, recomendamos o uso de arquivos .csv para melhor compatibilidade.',
-        })
+            "No momento, recomendamos o uso de arquivos .csv para melhor compatibilidade.",
+        });
       } else {
-        setFile(selectedFile)
-        toast.success('Arquivo selecionado!')
+        setFile(selectedFile);
+        toast.success("Arquivo selecionado!");
       }
     } else {
-      toast.error('Formato inválido', {
-        description: 'Por favor, use arquivos .csv ou .xlsx',
-      })
+      toast.error("Formato inválido", {
+        description: "Por favor, use arquivos .csv ou .xlsx",
+      });
     }
-  }
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
   const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }
+    e.preventDefault();
+    setIsDragging(false);
+  };
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    const droppedFile = e.dataTransfer.files[0]
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) {
-      validateFile(droppedFile)
+      validateFile(droppedFile);
     }
-  }
+  };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
+    const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      validateFile(selectedFile)
+      validateFile(selectedFile);
     }
-    e.target.value = ''
-  }
+    e.target.value = "";
+  };
 
   const handleProcess = async () => {
-    if (!file) return
+    if (!file) return;
 
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      toast.error('Formato não suportado para processamento imediato', {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      toast.error("Formato não suportado para processamento imediato", {
         description:
-          'Por favor, converta para CSV ou aguarde a atualização do sistema.',
-      })
-      return
+          "Por favor, converta para CSV ou aguarde a atualização do sistema.",
+      });
+      return;
     }
 
     try {
-      const contacts = await parseCSV(file)
+      const contacts = await parseCSV(file);
       if (contacts.length === 0) {
-        toast.warning('Arquivo vazio ou formato incorreto')
-        return
+        toast.warning("Arquivo vazio ou formato incorreto");
+        return;
       }
-      onNext(contacts, file.name)
+      onNext(contacts, file.name);
     } catch (error: any) {
-      toast.error('Erro ao processar arquivo', {
+      toast.error("Erro ao processar arquivo", {
         description: error.message,
-      })
+      });
     }
-  }
+  };
 
   return (
     <div className="space-y-8 animate-fade-in-up">
@@ -120,8 +120,8 @@ export function Step1Import({ onNext, isProcessing }: Step1ImportProps) {
         <CardContent className="p-0">
           <div
             className={cn(
-              'flex flex-col items-center justify-center min-h-[300px] p-8 cursor-pointer transition-all duration-300 group',
-              isDragging ? 'bg-primary/5' : 'hover:bg-slate-50',
+              "flex flex-col items-center justify-center min-h-[300px] p-8 cursor-pointer transition-all duration-300 group",
+              isDragging ? "bg-primary/5" : "hover:bg-slate-50",
             )}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -140,14 +140,14 @@ export function Step1Import({ onNext, isProcessing }: Step1ImportProps) {
               <>
                 <div
                   className={cn(
-                    'mb-6 p-4 rounded-full bg-slate-100 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#13ec5b]/10',
-                    isDragging && 'scale-110 bg-[#13ec5b]/10',
+                    "mb-6 p-4 rounded-full bg-slate-100 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#13ec5b]/10",
+                    isDragging && "scale-110 bg-[#13ec5b]/10",
                   )}
                 >
                   <FileSpreadsheet
                     className={cn(
-                      'h-10 w-10 text-slate-400 transition-colors duration-300 group-hover:text-[#13ec5b]',
-                      isDragging && 'text-[#13ec5b]',
+                      "h-10 w-10 text-slate-400 transition-colors duration-300 group-hover:text-[#13ec5b]",
+                      isDragging && "text-[#13ec5b]",
                     )}
                   />
                 </div>
@@ -155,10 +155,10 @@ export function Step1Import({ onNext, isProcessing }: Step1ImportProps) {
                   Arraste e solte sua planilha aqui
                 </h3>
                 <p className="text-slate-500 mb-6">
-                  ou{' '}
+                  ou{" "}
                   <span className="text-[#13ec5b] font-medium">
                     clique para buscar
-                  </span>{' '}
+                  </span>{" "}
                   no seu computador
                 </p>
                 <div className="bg-slate-100 text-slate-600 px-4 py-1.5 rounded-full text-sm font-medium">
@@ -180,8 +180,8 @@ export function Step1Import({ onNext, isProcessing }: Step1ImportProps) {
                   variant="outline"
                   size="sm"
                   onClick={(e) => {
-                    e.stopPropagation()
-                    setFile(null)
+                    e.stopPropagation();
+                    setFile(null);
                   }}
                   className="hover:text-destructive"
                 >
@@ -257,5 +257,5 @@ export function Step1Import({ onNext, isProcessing }: Step1ImportProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

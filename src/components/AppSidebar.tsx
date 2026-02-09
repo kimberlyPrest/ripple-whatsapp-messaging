@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   Home,
   PlusCircle,
@@ -7,8 +7,8 @@ import {
   LogOut,
   User as UserIcon,
   Settings,
-} from 'lucide-react'
-import { useAuth } from '@/hooks/use-auth'
+} from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Sidebar,
   SidebarContent,
@@ -19,117 +19,119 @@ import {
   SidebarMenuItem,
   SidebarGroup,
   SidebarGroupContent,
-} from '@/components/ui/sidebar'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { supabase } from '@/lib/supabase/client'
-import { cn } from '@/lib/utils'
+} from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
 export function AppSidebar() {
-  const { user, signOut } = useAuth()
-  const location = useLocation()
-  const [profileName, setProfileName] = useState<string>('')
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const { user, signOut } = useAuth();
+  const location = useLocation();
+  const [profileName, setProfileName] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchProfile() {
-      if (!user) return
+      if (!user) return;
 
       try {
         const { data } = await supabase
-          .from('profiles')
-          .select('name, avatar_url')
-          .eq('id', user.id)
-          .single()
+          .from("profiles")
+          .select("name, avatar_url")
+          .eq("id", user.id)
+          .single();
 
         // Cast data to any because avatar_url might not be in the generated types yet
-        const profileData = data as any
+        const profileData = data as any;
 
         if (profileData) {
-          if (profileData.name) setProfileName(profileData.name)
-          if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url)
+          if (profileData.name) setProfileName(profileData.name);
+          if (profileData.avatar_url) setAvatarUrl(profileData.avatar_url);
         } else if (user.user_metadata?.name) {
-          setProfileName(user.user_metadata.name)
+          setProfileName(user.user_metadata.name);
         }
 
         // Fallback name if still empty
         if (!profileName && !data?.name && !user.user_metadata?.name) {
-          const emailName = user.email?.split('@')[0] || 'Usuário'
-          setProfileName(emailName.charAt(0).toUpperCase() + emailName.slice(1))
+          const emailName = user.email?.split("@")[0] || "Usuário";
+          setProfileName(
+            emailName.charAt(0).toUpperCase() + emailName.slice(1),
+          );
         }
       } catch (error) {
-        console.error('Error fetching profile:', error)
+        console.error("Error fetching profile:", error);
       }
     }
 
     if (user) {
-      fetchProfile()
+      fetchProfile();
 
       // Real-time updates for profile
       const subscription = supabase
-        .channel('sidebar_profile')
+        .channel("sidebar_profile")
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles',
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles",
             filter: `id=eq.${user.id}`,
           },
           (payload) => {
-            const newData = payload.new as any
+            const newData = payload.new as any;
             if (newData) {
-              if (newData.name) setProfileName(newData.name)
+              if (newData.name) setProfileName(newData.name);
               if (newData.avatar_url !== undefined)
-                setAvatarUrl(newData.avatar_url)
+                setAvatarUrl(newData.avatar_url);
             }
           },
         )
-        .subscribe()
+        .subscribe();
 
       return () => {
-        subscription.unsubscribe()
-      }
+        subscription.unsubscribe();
+      };
     }
-  }, [user])
+  }, [user]);
 
   const menuItems = [
     {
-      title: 'Página Inicial',
-      url: '/dashboard',
+      title: "Página Inicial",
+      url: "/dashboard",
       icon: Home,
     },
     {
-      title: 'Novo disparo',
-      url: '/upload',
+      title: "Novo disparo",
+      url: "/upload",
       icon: PlusCircle,
     },
     {
-      title: 'Disparos',
-      url: '/disparos',
+      title: "Disparos",
+      url: "/disparos",
       icon: History,
     },
     {
-      title: 'Configurações',
-      url: '/settings',
+      title: "Configurações",
+      url: "/settings",
       icon: Settings,
     },
-  ]
+  ];
 
   const isActive = (path: string) => {
     return (
-      location.pathname === path || location.pathname.startsWith(path + '/')
-    )
-  }
+      location.pathname === path || location.pathname.startsWith(path + "/")
+    );
+  };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   return (
     <Sidebar className="border-r border-border bg-white">
@@ -154,31 +156,31 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {menuItems.map((item) => {
-                const active = isActive(item.url)
+                const active = isActive(item.url);
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
                       isActive={active}
                       className={cn(
-                        'h-11 px-4 text-base transition-all duration-200 hover:bg-green-50 hover:text-green-700',
+                        "h-11 px-4 text-base transition-all duration-200 hover:bg-green-50 hover:text-green-700",
                         active
-                          ? 'bg-green-50 text-green-700 font-medium shadow-sm ring-1 ring-green-100'
-                          : 'text-slate-600',
+                          ? "bg-green-50 text-green-700 font-medium shadow-sm ring-1 ring-green-100"
+                          : "text-slate-600",
                       )}
                     >
                       <Link to={item.url} className="flex items-center gap-3">
                         <item.icon
                           className={cn(
-                            'h-5 w-5',
-                            active ? 'text-green-700' : 'text-slate-500',
+                            "h-5 w-5",
+                            active ? "text-green-700" : "text-slate-500",
                           )}
                         />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
+                );
               })}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -190,7 +192,7 @@ export function AppSidebar() {
           <div className="flex items-center gap-3 overflow-hidden">
             <Avatar className="h-9 w-9 border border-white shadow-sm">
               <AvatarImage
-                src={avatarUrl || ''}
+                src={avatarUrl || ""}
                 alt={profileName}
                 className="object-cover"
               />
@@ -208,7 +210,7 @@ export function AppSidebar() {
               </span>
               <span
                 className="text-xs text-slate-500 truncate"
-                title={user?.email || ''}
+                title={user?.email || ""}
               >
                 {user?.email}
               </span>
@@ -227,5 +229,5 @@ export function AppSidebar() {
         </div>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

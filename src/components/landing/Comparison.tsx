@@ -1,5 +1,5 @@
-import { MinusCircle, ShieldCheck } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { MinusCircle, ShieldCheck } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function Comparison() {
   return (
@@ -55,5 +55,5 @@ export function Comparison() {
         </div>
       </div>
     </section>
-  )
+  );
 }

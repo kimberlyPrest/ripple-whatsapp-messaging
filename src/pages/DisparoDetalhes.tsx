@@ -1,179 +1,179 @@
-import { useEffect, useState, useCallback } from 'react'
-import { useAuth } from '@/hooks/use-auth'
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import {
   campaignsService,
   Campaign,
   CampaignMessage,
-} from '@/services/campaigns'
-import { useParams, Link, Navigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react'
-import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase/client'
-import { ScheduleConfig } from '@/lib/campaign-utils'
-import { CampaignKPIs } from '@/components/campaigns/CampaignKPIs'
-import { CampaignConfig } from '@/components/campaigns/CampaignConfig'
-import { CampaignMessagesTable } from '@/components/campaigns/CampaignMessagesTable'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardHeader, CardContent } from '@/components/ui/card'
+} from "@/services/campaigns";
+import { useParams, Link, Navigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, ArrowLeft, Play, Pause, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase/client";
+import { ScheduleConfig } from "@/lib/campaign-utils";
+import { CampaignKPIs } from "@/components/campaigns/CampaignKPIs";
+import { CampaignConfig } from "@/components/campaigns/CampaignConfig";
+import { CampaignMessagesTable } from "@/components/campaigns/CampaignMessagesTable";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 
 export default function DisparoDetalhes() {
-  const { user, loading: authLoading } = useAuth()
-  const { id } = useParams<{ id: string }>()
-  const [campaign, setCampaign] = useState<Campaign | null>(null)
-  const [messages, setMessages] = useState<CampaignMessage[]>([])
-  const [loading, setLoading] = useState(true)
-  const [actionLoading, setActionLoading] = useState(false)
-  const [retryLoadingId, setRetryLoadingId] = useState<string | null>(null)
+  const { user, loading: authLoading } = useAuth();
+  const { id } = useParams<{ id: string }>();
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [messages, setMessages] = useState<CampaignMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [retryLoadingId, setRetryLoadingId] = useState<string | null>(null);
 
   const fetchCampaignData = useCallback(async (campaignId: string) => {
     try {
       const [campData, msgsData] = await Promise.all([
         campaignsService.getById(campaignId),
         campaignsService.getMessages(campaignId),
-      ])
-      setCampaign(campData)
-      setMessages(msgsData)
+      ]);
+      setCampaign(campData);
+      setMessages(msgsData);
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao carregar detalhes da campanha')
+      console.error(error);
+      toast.error("Erro ao carregar detalhes da campanha");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (user && id) {
-      fetchCampaignData(id)
+      fetchCampaignData(id);
 
       // Real-time subscription for campaign updates
       const campaignSub = supabase
         .channel(`campaign_${id}`)
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: '*',
-            schema: 'public',
-            table: 'campaigns',
+            event: "*",
+            schema: "public",
+            table: "campaigns",
             filter: `id=eq.${id}`,
           },
           (payload) => {
-            setCampaign(payload.new as Campaign)
+            setCampaign(payload.new as Campaign);
           },
         )
-        .subscribe()
+        .subscribe();
 
       // Real-time subscription for messages updates
       const messagesSub = supabase
         .channel(`campaign_messages_${id}`)
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: '*',
-            schema: 'public',
-            table: 'campaign_messages',
+            event: "*",
+            schema: "public",
+            table: "campaign_messages",
             filter: `campaign_id=eq.${id}`,
           },
           () => {
             // Refresh messages when changes occur (optimally would update just the row, but refetching is safer for now)
-            campaignsService.getMessages(id).then(setMessages)
+            campaignsService.getMessages(id).then(setMessages);
           },
         )
-        .subscribe()
+        .subscribe();
 
       return () => {
-        campaignSub.unsubscribe()
-        messagesSub.unsubscribe()
-      }
+        campaignSub.unsubscribe();
+        messagesSub.unsubscribe();
+      };
     }
-  }, [user, id, fetchCampaignData])
+  }, [user, id, fetchCampaignData]);
 
   const handlePauseResume = async () => {
-    if (!campaign) return
-    setActionLoading(true)
-    const isPaused = campaign.status === 'paused'
+    if (!campaign) return;
+    setActionLoading(true);
+    const isPaused = campaign.status === "paused";
 
     try {
       if (isPaused) {
-        await campaignsService.resume(campaign.id)
-        toast.success('Campanha retomada com sucesso')
+        await campaignsService.resume(campaign.id);
+        toast.success("Campanha retomada com sucesso");
 
         // Trigger background processing immediately
         try {
-          await campaignsService.triggerQueue(campaign.id)
+          await campaignsService.triggerQueue(campaign.id);
         } catch (queueError) {
-          console.error('Failed to trigger queue', queueError)
+          console.error("Failed to trigger queue", queueError);
           toast.warning(
-            'A campanha foi retomada, mas o processamento pode demorar um pouco para iniciar.',
-          )
+            "A campanha foi retomada, mas o processamento pode demorar um pouco para iniciar.",
+          );
         }
       } else {
-        await campaignsService.pause(campaign.id)
-        toast.success('Campanha pausada com sucesso')
+        await campaignsService.pause(campaign.id);
+        toast.success("Campanha pausada com sucesso");
       }
       // Optimistic update
       setCampaign((prev) =>
-        prev ? { ...prev, status: isPaused ? 'active' : 'paused' } : null,
-      )
+        prev ? { ...prev, status: isPaused ? "active" : "paused" } : null,
+      );
     } catch (error) {
-      console.error(error)
-      toast.error(`Erro ao ${isPaused ? 'retomar' : 'pausar'} campanha`)
+      console.error(error);
+      toast.error(`Erro ao ${isPaused ? "retomar" : "pausar"} campanha`);
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
+  };
 
   const handleRetryMessage = async (messageId: string) => {
-    setRetryLoadingId(messageId)
+    setRetryLoadingId(messageId);
     try {
-      await campaignsService.retryMessage(messageId)
-      toast.success('Mensagem reinserida na fila')
+      await campaignsService.retryMessage(messageId);
+      toast.success("Mensagem reinserida na fila");
 
       // Update local state immediately for better UX
       setMessages((prev) =>
         prev.map((m) =>
           m.id === messageId
-            ? { ...m, status: 'aguardando', error_message: null, sent_at: null }
+            ? { ...m, status: "aguardando", error_message: null, sent_at: null }
             : m,
         ),
-      )
+      );
 
       // If campaign was finished, we optimistically set it to processing too,
       // though the subscription will handle it accurately.
       setCampaign((prev) => {
-        if (prev && prev.status === 'finished') {
-          return { ...prev, status: 'processing' }
+        if (prev && prev.status === "finished") {
+          return { ...prev, status: "processing" };
         }
-        return prev
-      })
+        return prev;
+      });
 
       // Trigger background processing immediately
       try {
         if (campaign) {
-          await campaignsService.triggerQueue(campaign.id)
+          await campaignsService.triggerQueue(campaign.id);
         }
       } catch (queueError) {
-        console.error('Failed to trigger queue', queueError)
+        console.error("Failed to trigger queue", queueError);
       }
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao tentar reenviar mensagem')
+      console.error(error);
+      toast.error("Erro ao tentar reenviar mensagem");
     } finally {
-      setRetryLoadingId(null)
+      setRetryLoadingId(null);
     }
-  }
+  };
 
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
 
   if (!loading && !campaign) {
@@ -184,28 +184,28 @@ export default function DisparoDetalhes() {
           <Link to="/disparos">Voltar para a lista</Link>
         </Button>
       </div>
-    )
+    );
   }
 
   const kpiStats = campaign
     ? {
-        sent: messages.filter((m) => m.status === 'sent').length,
+        sent: messages.filter((m) => m.status === "sent").length,
         waiting: messages.filter((m) =>
-          ['aguardando', 'pending'].includes(m.status),
+          ["aguardando", "pending"].includes(m.status),
         ).length,
-        failed: messages.filter((m) => ['failed', 'error'].includes(m.status))
+        failed: messages.filter((m) => ["failed", "error"].includes(m.status))
           .length,
         elapsed: campaign.execution_time || 0,
       }
-    : { sent: 0, waiting: 0, failed: 0, elapsed: 0 }
+    : { sent: 0, waiting: 0, failed: 0, elapsed: 0 };
 
-  const isPaused = campaign?.status === 'paused'
+  const isPaused = campaign?.status === "paused";
   const isActive = campaign
-    ? ['active', 'processing'].includes(campaign.status)
-    : false
+    ? ["active", "processing"].includes(campaign.status)
+    : false;
   const isFinished = campaign
-    ? campaign.status === 'finished' || campaign.status === 'canceled'
-    : false
+    ? campaign.status === "finished" || campaign.status === "canceled"
+    : false;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl animate-fade-in-up space-y-8">
@@ -229,7 +229,7 @@ export default function DisparoDetalhes() {
                   <h1 className="text-2xl font-bold tracking-tight">
                     {campaign?.name}
                   </h1>
-                  <Badge variant={isActive ? 'default' : 'secondary'}>
+                  <Badge variant={isActive ? "default" : "secondary"}>
                     {campaign?.status.toUpperCase()}
                   </Badge>
                 </div>
@@ -245,7 +245,7 @@ export default function DisparoDetalhes() {
           <Button
             onClick={handlePauseResume}
             disabled={actionLoading}
-            variant={isPaused ? 'default' : 'secondary'}
+            variant={isPaused ? "default" : "secondary"}
             className="w-full md:w-auto"
           >
             {actionLoading ? (
@@ -255,7 +255,7 @@ export default function DisparoDetalhes() {
             ) : (
               <Pause className="h-4 w-4 mr-2 fill-current" />
             )}
-            {isPaused ? 'Retomar Campanha' : 'Pausar Campanha'}
+            {isPaused ? "Retomar Campanha" : "Pausar Campanha"}
           </Button>
         )}
       </div>
@@ -309,5 +309,5 @@ export default function DisparoDetalhes() {
         />
       </div>
     </div>
-  )
+  );
 }

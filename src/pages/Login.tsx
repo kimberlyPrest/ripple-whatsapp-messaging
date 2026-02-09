@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { useAuth } from '@/hooks/use-auth'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -20,70 +20,70 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+} from "@/components/ui/form";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-})
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
+});
 
 export default function Login() {
-  const { signIn, user, loading } = useAuth()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const navigate = useNavigate()
+  const { signIn, user, loading } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
-  })
+  });
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   if (user) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/dashboard" replace />;
   }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const { error } = await signIn(values.email, values.password)
+      const { error } = await signIn(values.email, values.password);
 
       if (error) {
-        const errorMessage = error.message || ''
+        const errorMessage = error.message || "";
 
-        if (errorMessage.includes('Invalid login credentials')) {
-          toast.error('Credenciais inválidas', {
-            description: 'E-mail ou senha incorretos.',
-          })
+        if (errorMessage.includes("Invalid login credentials")) {
+          toast.error("Credenciais inválidas", {
+            description: "E-mail ou senha incorretos.",
+          });
         } else {
-          toast.error('Erro no login', { description: errorMessage })
+          toast.error("Erro no login", { description: errorMessage });
         }
       } else {
-        toast.success('Login realizado com sucesso!')
-        navigate('/')
+        toast.success("Login realizado com sucesso!");
+        navigate("/");
       }
     } catch (error) {
-      console.error('Unexpected login error:', error)
-      toast.error('Ocorreu um erro inesperado', {
-        description: 'Tente novamente mais tarde.',
-      })
+      console.error("Unexpected login error:", error);
+      toast.error("Ocorreu um erro inesperado", {
+        description: "Tente novamente mais tarde.",
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 animate-fade-in-up">
@@ -130,7 +130,7 @@ export default function Login() {
                     Entrando...
                   </>
                 ) : (
-                  'Entrar'
+                  "Entrar"
                 )}
               </Button>
             </form>
@@ -138,7 +138,7 @@ export default function Login() {
         </CardContent>
         <CardFooter className="flex justify-center flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Não tem uma conta?{' '}
+            Não tem uma conta?{" "}
             <Link
               to="/signup"
               className="text-primary hover:underline font-medium"
@@ -149,5 +149,5 @@ export default function Login() {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }

@@ -1,11 +1,11 @@
-import { Navbar } from '@/components/landing/Navbar'
-import { Hero } from '@/components/landing/Hero'
-import { Metrics } from '@/components/landing/Metrics'
-import { Comparison } from '@/components/landing/Comparison'
-import { Steps } from '@/components/landing/Steps'
-import { Features } from '@/components/landing/Features'
-import { CTA } from '@/components/landing/CTA'
-import { Footer } from '@/components/landing/Footer'
+import { Navbar } from "@/components/landing/Navbar";
+import { Hero } from "@/components/landing/Hero";
+import { Metrics } from "@/components/landing/Metrics";
+import { Comparison } from "@/components/landing/Comparison";
+import { Steps } from "@/components/landing/Steps";
+import { Features } from "@/components/landing/Features";
+import { CTA } from "@/components/landing/CTA";
+import { Footer } from "@/components/landing/Footer";
 
 export default function Site() {
   return (
@@ -19,5 +19,5 @@ export default function Site() {
       <CTA />
       <Footer />
     </div>
-  )
+  );
 }
