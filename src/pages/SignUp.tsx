@@ -69,7 +69,9 @@ export default function SignUp() {
       if (error) {
         toast.error("Erro ao criar conta", { description: error.message });
       } else {
-        toast.success("Conta criada com sucesso!");
+        toast.success("Conta criada com sucesso!", {
+          description: "Verifique seu email para confirmar a conta.",
+        });
         navigate("/");
       }
     } catch (error) {
