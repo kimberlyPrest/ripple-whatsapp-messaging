@@ -1,25 +1,17 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "./types";
+// AVOID UPDATING THIS FILE DIRECTLY. It is automatically generated.
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.warn(
-    "Supabase environment variables are missing. The app may not function correctly.",
-  );
-}
+// Import the supabase client like this:
+// import { supabase } from "@/lib/supabase/client";
 
-// Use placeholders if variables are missing to prevent "supabaseUrl is required" runtime error
-const url = SUPABASE_URL || "https://placeholder.supabase.co";
-const key = SUPABASE_ANON_KEY || "placeholder-key";
-
-export const supabase = createClient<Database>(url, key, {
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  },
+  }
 });
