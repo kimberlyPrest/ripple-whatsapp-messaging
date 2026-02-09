@@ -14,8 +14,8 @@ SELECT cron.schedule(
     $$
     SELECT
       net.http_post(
-          url:='https://aqmsvswynbtyweeqswyt.supabase.co/functions/v1/process-campaign-queue',
-          headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxbXN2c3d5bmJ0eXdlZXFzd3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzMTg3NDYsImV4cCI6MjA4NTg5NDc0Nn0.1nzL4SUlB1Kf-VVJkwk6Ulfx3UXUGYN-SLZFRwaxZIY"}'::jsonb,
+          url:='https://trlhwojopyhowtfgijky.supabase.co/functions/v1/process-campaign-queue',
+          headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRybGh3b2pvcHlob3d0Zmdpamt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NzEwNDUsImV4cCI6MjA4NjI0NzA0NX0.30cJ4U8rpilzn0LfG9Y-TAaqn42XmMP4K8SNH7BpQW4"}'::jsonb,
           body:='{}'::jsonb
       ) as request_id;
     $$
