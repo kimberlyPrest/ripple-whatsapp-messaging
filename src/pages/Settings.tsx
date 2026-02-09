@@ -32,7 +32,11 @@ const profileFormSchema = z.object({
     message: "O nome deve ter pelo menos 2 caracteres.",
   }),
   email: z.string().email(),
-  webhook_url: z.string().url("A URL do webhook deve ser válida.").nullable().or(z.literal("")),
+  webhook_url: z
+    .string()
+    .url("A URL do webhook deve ser válida.")
+    .nullable()
+    .or(z.literal("")),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -153,12 +157,12 @@ export default function Settings() {
 
   const userInitials = form.getValues("name")
     ? form
-      .getValues("name")
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+        .getValues("name")
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
     : user.email?.substring(0, 2).toUpperCase();
 
   return (
@@ -285,7 +289,8 @@ export default function Settings() {
                             />
                           </FormControl>
                           <FormDescription>
-                            URL para onde as mensagens do WhatsApp serão enviadas.
+                            URL para onde as mensagens do WhatsApp serão
+                            enviadas.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
