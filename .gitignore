@@ -89,7 +89,7 @@ out/
 
 # nuxt.js
 .nuxt/
-dist/
+
 
 # vue press
 .vuepress/dist
@@ -118,11 +118,9 @@ dist/
 *.tsbuildinfo
 
 # vite
-dist
 dist-ssr
 *.local
 
 # production
-/dist
 /dist-ssr
 /build
