@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -6,16 +6,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Contact, contactsService } from '@/services/contacts'
-import { Trash2, Pencil, Send, AlertCircle, Loader2 } from 'lucide-react'
-import { EditContactDialog } from './EditContactDialog'
-import { BulkSendModal } from '@/components/campaigns/BulkSendModal'
-import { toast } from 'sonner'
-import { Badge } from '@/components/ui/badge'
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Contact, contactsService } from "@/services/contacts";
+import { Trash2, Pencil, Send, AlertCircle, Loader2 } from "lucide-react";
+import { EditContactDialog } from "./EditContactDialog";
+import { BulkSendModal } from "@/components/campaigns/BulkSendModal";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,12 +26,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog";
 
 interface ContactsTableProps {
-  contacts: Contact[]
-  onRefresh: () => void
-  isLoading?: boolean
+  contacts: Contact[];
+  onRefresh: () => void;
+  isLoading?: boolean;
 }
 
 export function ContactsTable({
@@ -39,78 +39,78 @@ export function ContactsTable({
   onRefresh,
   isLoading = false,
 }: ContactsTableProps) {
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [editingContact, setEditingContact] = useState<Contact | null>(null)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isBulkSendModalOpen, setIsBulkSendModalOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [sendingIds, setSendingIds] = useState<string[]>([])
-  const [sentTimestamps, setSentTimestamps] = useState<number[]>([])
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isBulkSendModalOpen, setIsBulkSendModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [sendingIds, setSendingIds] = useState<string[]>([]);
+  const [sentTimestamps, setSentTimestamps] = useState<number[]>([]);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === contacts.length) {
-      setSelectedIds([])
+      setSelectedIds([]);
     } else {
-      setSelectedIds(contacts.map((c) => c.id))
+      setSelectedIds(contacts.map((c) => c.id));
     }
-  }
+  };
 
   const toggleSelectOne = (id: string) => {
     if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter((item) => item !== id))
+      setSelectedIds(selectedIds.filter((item) => item !== id));
     } else {
-      setSelectedIds([...selectedIds, id])
+      setSelectedIds([...selectedIds, id]);
     }
-  }
+  };
 
   const handleDelete = async (id: string) => {
     try {
-      await contactsService.delete(id)
-      toast.success('Contato removido')
+      await contactsService.delete(id);
+      toast.success("Contato removido");
       if (selectedIds.includes(id)) {
-        setSelectedIds(selectedIds.filter((item) => item !== id))
+        setSelectedIds(selectedIds.filter((item) => item !== id));
       }
-      onRefresh()
+      onRefresh();
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao remover contato')
+      console.error(error);
+      toast.error("Erro ao remover contato");
     }
-  }
+  };
 
   const handleBulkDelete = async () => {
-    if (selectedIds.length === 0) return
-    setIsDeleting(true)
+    if (selectedIds.length === 0) return;
+    setIsDeleting(true);
     try {
-      await contactsService.deleteBulk(selectedIds)
-      toast.success(`${selectedIds.length} contatos removidos`)
-      setSelectedIds([])
-      onRefresh()
+      await contactsService.deleteBulk(selectedIds);
+      toast.success(`${selectedIds.length} contatos removidos`);
+      setSelectedIds([]);
+      onRefresh();
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao remover contatos')
+      console.error(error);
+      toast.error("Erro ao remover contatos");
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
   const handleBulkSendClick = () => {
     if (selectedIds.length === 0) {
-      toast.warning('Selecione pelo menos um contato para enviar mensagens.')
-      return
+      toast.warning("Selecione pelo menos um contato para enviar mensagens.");
+      return;
     }
-    setIsBulkSendModalOpen(true)
-  }
+    setIsBulkSendModalOpen(true);
+  };
 
   const handleSendOne = async (contact: Contact) => {
-    if (sendingIds.includes(contact.id)) return
+    if (sendingIds.includes(contact.id)) return;
 
     // Rate Limit Check
-    const now = Date.now()
-    const timeWindow = 30000 // 30 seconds
-    const threshold = 5
+    const now = Date.now();
+    const timeWindow = 30000; // 30 seconds
+    const threshold = 5;
 
     // Filter keeps only recent timestamps from the current state
-    const recentSends = sentTimestamps.filter((t) => now - t < timeWindow)
+    const recentSends = sentTimestamps.filter((t) => now - t < timeWindow);
 
     if (recentSends.length >= threshold) {
       toast.warning(
@@ -118,58 +118,58 @@ export function ContactsTable({
         {
           duration: 5000,
         },
-      )
+      );
     }
 
-    setSendingIds((prev) => [...prev, contact.id])
+    setSendingIds((prev) => [...prev, contact.id]);
     try {
-      await contactsService.sendWhatsappMessage(contact)
-      await contactsService.update(contact.id, { status: 'enviado' })
+      await contactsService.sendWhatsappMessage(contact);
+      await contactsService.update(contact.id, { status: "enviado" });
 
       // Record successful send timestamp
       setSentTimestamps((prev) => {
-        const currentTime = Date.now()
+        const currentTime = Date.now();
         // Keep only timestamps within the window + current one
         return [
           ...prev.filter((t) => currentTime - t < timeWindow),
           currentTime,
-        ]
-      })
+        ];
+      });
 
-      toast.success(`Mensagem enviada para ${contact.name}`)
-      onRefresh()
+      toast.success(`Mensagem enviada para ${contact.name}`);
+      onRefresh();
     } catch (error) {
-      console.error(error)
-      toast.error(`Erro ao enviar para ${contact.name}`)
+      console.error(error);
+      toast.error(`Erro ao enviar para ${contact.name}`);
       try {
-        await contactsService.update(contact.id, { status: 'falha' })
-        onRefresh()
+        await contactsService.update(contact.id, { status: "falha" });
+        onRefresh();
       } catch (e) {
-        console.error('Failed to update status', e)
+        console.error("Failed to update status", e);
       }
     } finally {
-      setSendingIds((prev) => prev.filter((id) => id !== contact.id))
+      setSendingIds((prev) => prev.filter((id) => id !== contact.id));
     }
-  }
+  };
 
   const getStatusBadge = (status: string) => {
-    const normalizedStatus = status?.toLowerCase() || 'pending'
+    const normalizedStatus = status?.toLowerCase() || "pending";
     switch (normalizedStatus) {
-      case 'enviado':
+      case "enviado":
         return (
           <Badge variant="default" className="bg-green-500 hover:bg-green-600">
             Enviado
           </Badge>
-        )
-      case 'falha':
-        return <Badge variant="destructive">Falha</Badge>
-      case 'pending':
-      case 'pendente':
-        return <Badge variant="secondary">Pendente</Badge>
+        );
+      case "falha":
+        return <Badge variant="destructive">Falha</Badge>;
+      case "pending":
+      case "pendente":
+        return <Badge variant="secondary">Pendente</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">{status}</Badge>;
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -196,7 +196,7 @@ export function ContactsTable({
               <AlertDialogHeader>
                 <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Esta ação não pode ser desfeita. Isso excluirá permanentemente{' '}
+                  Esta ação não pode ser desfeita. Isso excluirá permanentemente{" "}
                   {selectedIds.length} contatos selecionados.
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -288,7 +288,7 @@ export function ContactsTable({
                 <TableRow
                   key={contact.id}
                   data-state={
-                    selectedIds.includes(contact.id) ? 'selected' : undefined
+                    selectedIds.includes(contact.id) ? "selected" : undefined
                   }
                 >
                   <TableCell>
@@ -327,8 +327,8 @@ export function ContactsTable({
                         variant="ghost"
                         size="icon"
                         onClick={() => {
-                          setEditingContact(contact)
-                          setIsEditDialogOpen(true)
+                          setEditingContact(contact);
+                          setIsEditDialogOpen(true);
                         }}
                       >
                         <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
@@ -363,10 +363,10 @@ export function ContactsTable({
         onOpenChange={setIsBulkSendModalOpen}
         selectedContactIds={selectedIds}
         onSuccess={() => {
-          setSelectedIds([]) // Clear selection after creating campaign
-          onRefresh() // Refresh list if needed (though status update happens via campaigns not contacts usually, but good to refresh)
+          setSelectedIds([]); // Clear selection after creating campaign
+          onRefresh(); // Refresh list if needed (though status update happens via campaigns not contacts usually, but good to refresh)
         }}
       />
     </div>
-  )
+  );
 }

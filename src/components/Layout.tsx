@@ -1,27 +1,27 @@
-import { Outlet, Link, useLocation } from 'react-router-dom'
-import { MessageCircle, Menu, Home, LogIn } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useAuth } from '@/hooks/use-auth'
-import { Button } from '@/components/ui/button'
+import { Outlet, Link, useLocation } from "react-router-dom";
+import { MessageCircle, Menu, Home, LogIn } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet'
+} from "@/components/ui/sheet";
 import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
-} from '@/components/ui/sidebar'
-import { AppSidebar } from '@/components/AppSidebar'
-import { useState } from 'react'
+} from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { useState } from "react";
 
 export default function Layout() {
-  const location = useLocation()
-  const { user } = useAuth()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const location = useLocation();
+  const { user } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Authenticated Layout (Sidebar)
   if (user) {
@@ -48,25 +48,25 @@ export default function Layout() {
           </main>
         </SidebarInset>
       </SidebarProvider>
-    )
+    );
   }
 
   // Public Layout (Top Navigation)
   const isActive = (path: string) => {
     return (
-      location.pathname === path || location.pathname.startsWith(path + '/')
-    )
-  }
+      location.pathname === path || location.pathname.startsWith(path + "/")
+    );
+  };
 
   const NavLinks = () => (
     <>
       <Link
         to="/site"
         className={cn(
-          'text-sm font-medium transition-colors flex items-center gap-2',
-          isActive('/site') || isActive('/')
-            ? 'text-primary font-bold'
-            : 'text-muted-foreground hover:text-primary',
+          "text-sm font-medium transition-colors flex items-center gap-2",
+          isActive("/site") || isActive("/")
+            ? "text-primary font-bold"
+            : "text-muted-foreground hover:text-primary",
         )}
         onClick={() => setIsMobileMenuOpen(false)}
       >
@@ -82,7 +82,7 @@ export default function Layout() {
         Login
       </Link>
     </>
-  )
+  );
 
   return (
     <div className="flex flex-col min-h-screen font-sans bg-background">
@@ -153,5 +153,5 @@ export default function Layout() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

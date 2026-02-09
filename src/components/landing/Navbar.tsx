@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Menu, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function Navbar() {
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const Logo = () => (
     <div className="flex items-center gap-2">
@@ -25,15 +25,15 @@ export function Navbar() {
         Ripple
       </span>
     </div>
-  )
+  );
 
   return (
     <nav
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
-          ? 'bg-white/80 backdrop-blur-md border-b border-slate-100 py-3'
-          : 'bg-transparent py-5',
+          ? "bg-white/80 backdrop-blur-md border-b border-slate-100 py-3"
+          : "bg-transparent py-5",
       )}
     >
       <div className="container mx-auto px-4 max-w-7xl">
@@ -87,5 +87,5 @@ export function Navbar() {
         </div>
       )}
     </nav>
-  )
+  );
 }

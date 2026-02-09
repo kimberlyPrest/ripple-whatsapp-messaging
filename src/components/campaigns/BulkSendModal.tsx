@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { format, addSeconds } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { format, addSeconds } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Calendar as CalendarIcon,
   Info,
@@ -14,9 +14,9 @@ import {
   PauseCircle,
   AlertCircle,
   CalendarClock,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -33,44 +33,44 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { Switch } from '@/components/ui/switch'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { campaignsService, Campaign } from '@/services/campaigns'
-import { toast } from 'sonner'
-import { useAuth } from '@/hooks/use-auth'
-import { CampaignConfirmationStep } from './CampaignConfirmationStep'
+} from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { campaignsService, Campaign } from "@/services/campaigns";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import { CampaignConfirmationStep } from "./CampaignConfirmationStep";
 import {
   calculateCampaignSchedule,
   ScheduleConfig,
   ScheduledMessage,
   checkScheduleConflict,
   ConflictResult,
-} from '@/lib/campaign-utils'
-import { contactsService, Contact } from '@/services/contacts'
+} from "@/lib/campaign-utils";
+import { contactsService, Contact } from "@/services/contacts";
 
 const formSchema = z
   .object({
-    name: z.string().min(1, 'Nome da campanha é obrigatório'),
+    name: z.string().min(1, "Nome da campanha é obrigatório"),
     minInterval: z.coerce
       .number()
-      .min(5, 'O intervalo mínimo deve ser de pelo menos 5 segundos'),
+      .min(5, "O intervalo mínimo deve ser de pelo menos 5 segundos"),
     maxInterval: z.coerce.number(),
-    scheduleType: z.enum(['immediate', 'scheduled']),
+    scheduleType: z.enum(["immediate", "scheduled"]),
     scheduledDate: z.date().optional(),
     scheduledTime: z.string().optional(),
 
@@ -79,9 +79,9 @@ const formSchema = z
     batchPauseMin: z.coerce.number().optional(),
     batchPauseMax: z.coerce.number().optional(),
 
-    businessHoursStrategy: z.enum(['ignore', 'pause']).default('ignore'),
-    businessHoursPauseTime: z.string().default('18:00'),
-    businessHoursResumeTime: z.string().default('08:00'),
+    businessHoursStrategy: z.enum(["ignore", "pause"]).default("ignore"),
+    businessHoursPauseTime: z.string().default("18:00"),
+    businessHoursResumeTime: z.string().default("08:00"),
 
     // New Automatic Pause fields
     automaticPause: z.boolean().default(false),
@@ -90,67 +90,67 @@ const formSchema = z
     resumeTime: z.string().optional(),
   })
   .refine((data) => data.maxInterval >= data.minInterval, {
-    message: 'O intervalo máximo deve ser maior ou igual ao mínimo',
-    path: ['maxInterval'],
+    message: "O intervalo máximo deve ser maior ou igual ao mínimo",
+    path: ["maxInterval"],
   })
   .refine(
     (data) => {
-      if (data.scheduleType === 'scheduled') {
-        return !!data.scheduledDate && !!data.scheduledTime
+      if (data.scheduleType === "scheduled") {
+        return !!data.scheduledDate && !!data.scheduledTime;
       }
-      return true
+      return true;
     },
     {
-      message: 'Data e hora são obrigatórios para agendamento',
-      path: ['scheduledDate'],
+      message: "Data e hora são obrigatórios para agendamento",
+      path: ["scheduledDate"],
     },
   )
   .refine(
     (data) => {
       if (data.useBatching) {
-        if (!data.batchSize || data.batchSize < 1) return false
-        if (!data.batchPauseMin || data.batchPauseMin < 1) return false
+        if (!data.batchSize || data.batchSize < 1) return false;
+        if (!data.batchPauseMin || data.batchPauseMin < 1) return false;
         if (!data.batchPauseMax || data.batchPauseMax < data.batchPauseMin)
-          return false
+          return false;
       }
-      return true
+      return true;
     },
     {
       message:
-        'Configuração de pausas inválida. Verifique o tamanho do lote e os intervalos.',
-      path: ['batchSize'],
+        "Configuração de pausas inválida. Verifique o tamanho do lote e os intervalos.",
+      path: ["batchSize"],
     },
   )
   .refine(
     (data) => {
-      if (data.businessHoursStrategy === 'pause') {
-        return !!data.businessHoursPauseTime && !!data.businessHoursResumeTime
+      if (data.businessHoursStrategy === "pause") {
+        return !!data.businessHoursPauseTime && !!data.businessHoursResumeTime;
       }
-      return true
+      return true;
     },
     {
-      message: 'Defina os horários de pausa e retomada',
-      path: ['businessHoursPauseTime'],
+      message: "Defina os horários de pausa e retomada",
+      path: ["businessHoursPauseTime"],
     },
   )
   .refine(
     (data) => {
       if (data.automaticPause) {
-        return !!data.pauseTime && !!data.resumeDate && !!data.resumeTime
+        return !!data.pauseTime && !!data.resumeDate && !!data.resumeTime;
       }
-      return true
+      return true;
     },
     {
-      message: 'Preencha todos os campos da pausa automática',
-      path: ['pauseTime'],
+      message: "Preencha todos os campos da pausa automática",
+      path: ["pauseTime"],
     },
-  )
+  );
 
 interface BulkSendModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  selectedContactIds: string[]
-  onSuccess: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedContactIds: string[];
+  onSuccess: () => void;
 }
 
 export function BulkSendModal({
@@ -159,44 +159,44 @@ export function BulkSendModal({
   selectedContactIds,
   onSuccess,
 }: BulkSendModalProps) {
-  const { user } = useAuth()
-  const [step, setStep] = useState<'config' | 'confirm'>('config')
-  const [isLoading, setIsLoading] = useState(false)
+  const { user } = useAuth();
+  const [step, setStep] = useState<"config" | "confirm">("config");
+  const [isLoading, setIsLoading] = useState(false);
   const [orderedContacts, setOrderedContacts] = useState<
     (Contact | undefined)[]
-  >([])
-  const [schedule, setSchedule] = useState<ScheduledMessage[]>([])
-  const [config, setConfig] = useState<ScheduleConfig | null>(null)
+  >([]);
+  const [schedule, setSchedule] = useState<ScheduledMessage[]>([]);
+  const [config, setConfig] = useState<ScheduleConfig | null>(null);
 
   // Validation State
   const [existingCampaigns, setExistingCampaigns] = useState<
     Partial<Campaign>[]
-  >([])
+  >([]);
   const [conflict, setConflict] = useState<ConflictResult>({
     hasConflict: false,
-  })
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
+      name: "",
       minInterval: 30,
       maxInterval: 60,
-      scheduleType: 'immediate',
+      scheduleType: "immediate",
       scheduledDate: new Date(),
-      scheduledTime: format(addSeconds(new Date(), 600), 'HH:mm'),
+      scheduledTime: format(addSeconds(new Date(), 600), "HH:mm"),
       useBatching: false,
       batchSize: 50,
       batchPauseMin: 300,
       batchPauseMax: 600,
-      businessHoursStrategy: 'ignore',
-      businessHoursPauseTime: '18:00',
-      businessHoursResumeTime: '08:00',
+      businessHoursStrategy: "ignore",
+      businessHoursPauseTime: "18:00",
+      businessHoursResumeTime: "08:00",
       automaticPause: false,
     },
-  })
+  });
 
-  const watchedValues = form.watch()
+  const watchedValues = form.watch();
   const {
     minInterval,
     maxInterval,
@@ -214,42 +214,42 @@ export function BulkSendModal({
     pauseTime,
     resumeDate,
     resumeTime,
-  } = watchedValues
+  } = watchedValues;
 
   useEffect(() => {
     if (open) {
-      setStep('config')
-      form.reset()
-      setOrderedContacts([])
-      setSchedule([])
-      setConfig(null)
-      setConflict({ hasConflict: false })
+      setStep("config");
+      form.reset();
+      setOrderedContacts([]);
+      setSchedule([]);
+      setConfig(null);
+      setConflict({ hasConflict: false });
 
       campaignsService
         .getActiveAndScheduled()
         .then((data) => {
-          setExistingCampaigns(data)
+          setExistingCampaigns(data);
         })
         .catch((err) => {
-          console.error('Failed to load campaigns for validation', err)
-        })
+          console.error("Failed to load campaigns for validation", err);
+        });
     }
-  }, [open, form])
+  }, [open, form]);
 
   const getStartTime = () => {
-    if (scheduleType === 'scheduled' && scheduledDate && scheduledTime) {
-      const [hours, minutes] = scheduledTime.split(':').map(Number)
-      const date = new Date(scheduledDate)
-      date.setHours(hours, minutes)
-      return date
+    if (scheduleType === "scheduled" && scheduledDate && scheduledTime) {
+      const [hours, minutes] = scheduledTime.split(":").map(Number);
+      const date = new Date(scheduledDate);
+      date.setHours(hours, minutes);
+      return date;
     }
-    return new Date()
-  }
+    return new Date();
+  };
 
   useEffect(() => {
-    if (!open || existingCampaigns.length === 0) return
+    if (!open || existingCampaigns.length === 0) return;
 
-    const startTime = getStartTime()
+    const startTime = getStartTime();
     const currentConfig: ScheduleConfig = {
       minInterval: Number(minInterval),
       maxInterval: Number(maxInterval),
@@ -257,7 +257,7 @@ export function BulkSendModal({
       batchSize: Number(batchSize),
       batchPauseMin: Number(batchPauseMin),
       batchPauseMax: Number(batchPauseMax),
-      businessHoursStrategy: businessHoursStrategy as 'ignore' | 'pause',
+      businessHoursStrategy: businessHoursStrategy as "ignore" | "pause",
       businessHoursPauseTime,
       businessHoursResumeTime,
       automaticPause,
@@ -265,15 +265,15 @@ export function BulkSendModal({
       resumeDate,
       resumeTime,
       startTime,
-    }
+    };
 
     const result = checkScheduleConflict(
       currentConfig,
       selectedContactIds.length,
       existingCampaigns as any[],
-    )
+    );
 
-    setConflict(result)
+    setConflict(result);
   }, [
     open,
     existingCampaigns,
@@ -294,46 +294,47 @@ export function BulkSendModal({
     pauseTime,
     resumeDate,
     resumeTime,
-  ])
+  ]);
 
-  const count = selectedContactIds.length
-  const avgInterval = (Number(minInterval) + Number(maxInterval)) / 2
-  const estimatedTime = Math.max(0, count - 1) * avgInterval
+  const count = selectedContactIds.length;
+  const avgInterval = (Number(minInterval) + Number(maxInterval)) / 2;
+  const estimatedTime = Math.max(0, count - 1) * avgInterval;
 
   const formattedEstimatedTime = () => {
-    if (count <= 1) return '0s (Imediato)'
-    if (!estimatedTime) return '0s'
+    if (count <= 1) return "0s (Imediato)";
+    if (!estimatedTime) return "0s";
 
-    const minutes = Math.floor(estimatedTime / 60)
-    const seconds = Math.floor(estimatedTime % 60)
+    const minutes = Math.floor(estimatedTime / 60);
+    const seconds = Math.floor(estimatedTime % 60);
     if (minutes > 60) {
-      const hours = Math.floor(minutes / 60)
-      const remainingMinutes = minutes % 60
-      return `${hours}h ${remainingMinutes}m ${seconds}s`
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      return `${hours}h ${remainingMinutes}m ${seconds}s`;
     }
-    return `${minutes} min ${seconds}s`
-  }
+    return `${minutes} min ${seconds}s`;
+  };
 
   const isOutsideBusinessHours = () => {
-    const start = getStartTime()
-    const hours = start.getHours()
-    return hours < 8 || hours >= 18
-  }
+    const start = getStartTime();
+    const hours = start.getHours();
+    return hours < 8 || hours >= 18;
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (conflict.hasConflict) {
-      toast.error('Corrija o conflito de agendamento antes de prosseguir.')
-      return
+      toast.error("Corrija o conflito de agendamento antes de prosseguir.");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const fetchedContacts = await contactsService.getByIds(selectedContactIds)
+      const fetchedContacts =
+        await contactsService.getByIds(selectedContactIds);
       const alignedContacts = selectedContactIds.map((id) =>
         fetchedContacts.find((c) => c.id === id),
-      )
+      );
 
-      const startTime = getStartTime()
+      const startTime = getStartTime();
       const scheduleConfig: ScheduleConfig = {
         minInterval: values.minInterval,
         maxInterval: values.maxInterval,
@@ -349,35 +350,35 @@ export function BulkSendModal({
         resumeDate: values.resumeDate,
         resumeTime: values.resumeTime,
         startTime: startTime,
-      }
+      };
 
       const calculatedSchedule = calculateCampaignSchedule(
         scheduleConfig,
         selectedContactIds.length,
-      )
+      );
 
-      setOrderedContacts(alignedContacts)
-      setConfig(scheduleConfig)
-      setSchedule(calculatedSchedule)
-      setStep('confirm')
+      setOrderedContacts(alignedContacts);
+      setConfig(scheduleConfig);
+      setSchedule(calculatedSchedule);
+      setStep("confirm");
     } catch (err) {
-      console.error(err)
-      toast.error('Erro ao preparar confirmação.')
+      console.error(err);
+      toast.error("Erro ao preparar confirmação.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleFinalConfirm = async () => {
     if (!user || !config) {
-      toast.error('Erro de autenticação ou configuração.')
-      return
+      toast.error("Erro de autenticação ou configuração.");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const values = form.getValues()
-      let scheduledAt = config.startTime.toISOString()
+      const values = form.getValues();
+      let scheduledAt = config.startTime.toISOString();
 
       const campaignConfig = {
         min_interval: values.minInterval,
@@ -403,48 +404,48 @@ export function BulkSendModal({
               resume_time: values.resumeTime,
             }
           : { enabled: false },
-      }
+      };
 
       await campaignsService.create(
         {
           name: values.name,
           user_id: user.id,
-          status: values.scheduleType === 'scheduled' ? 'scheduled' : 'active',
+          status: values.scheduleType === "scheduled" ? "scheduled" : "active",
           total_messages: selectedContactIds.length,
           scheduled_at: scheduledAt,
           config: campaignConfig,
         },
         selectedContactIds,
-      )
+      );
 
-      toast.success('Campanha iniciada com sucesso!')
-      onSuccess()
-      onOpenChange(false)
+      toast.success("Campanha iniciada com sucesso!");
+      onSuccess();
+      onOpenChange(false);
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao salvar campanha')
+      console.error(error);
+      toast.error("Erro ao salvar campanha");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const applySuggestion = () => {
     if (conflict.suggestedTime) {
-      form.setValue('scheduleType', 'scheduled')
-      form.setValue('scheduledDate', conflict.suggestedTime)
-      form.setValue('scheduledTime', format(conflict.suggestedTime, 'HH:mm'))
+      form.setValue("scheduleType", "scheduled");
+      form.setValue("scheduledDate", conflict.suggestedTime);
+      form.setValue("scheduledTime", format(conflict.suggestedTime, "HH:mm"));
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        {step === 'config' ? (
+        {step === "config" ? (
           <>
             <DialogHeader>
               <DialogTitle>Configurar Envio em Massa</DialogTitle>
               <DialogDescription>
-                Defina os parâmetros para o envio de mensagens para{' '}
+                Defina os parâmetros para o envio de mensagens para{" "}
                 {selectedContactIds.length} contatos.
               </DialogDescription>
             </DialogHeader>
@@ -652,14 +653,14 @@ export function BulkSendModal({
                                 <PopoverTrigger asChild>
                                   <FormControl>
                                     <Button
-                                      variant={'outline'}
+                                      variant={"outline"}
                                       className={cn(
-                                        'w-full pl-3 text-left font-normal text-xs px-2',
-                                        !field.value && 'text-muted-foreground',
+                                        "w-full pl-3 text-left font-normal text-xs px-2",
+                                        !field.value && "text-muted-foreground",
                                       )}
                                     >
                                       {field.value ? (
-                                        format(field.value, 'dd/MM/yy')
+                                        format(field.value, "dd/MM/yy")
                                       ) : (
                                         <span>Data</span>
                                       )}
@@ -741,7 +742,7 @@ export function BulkSendModal({
                               </FormLabel>
                             </FormItem>
 
-                            {businessHoursStrategy === 'ignore' && (
+                            {businessHoursStrategy === "ignore" && (
                               <div className="ml-7 text-xs text-muted-foreground bg-red-50 p-2 rounded border border-red-100 text-red-600">
                                 Risco de bloqueios aumentado.
                               </div>
@@ -762,7 +763,7 @@ export function BulkSendModal({
                     )}
                   />
 
-                  {businessHoursStrategy === 'pause' && (
+                  {businessHoursStrategy === "pause" && (
                     <div className="flex gap-4 ml-7 animate-fade-in-down">
                       <FormField
                         control={form.control}
@@ -830,7 +831,7 @@ export function BulkSendModal({
                     )}
                   />
 
-                  {scheduleType === 'scheduled' && (
+                  {scheduleType === "scheduled" && (
                     <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-down p-4 border rounded-md bg-muted/20">
                       <FormField
                         control={form.control}
@@ -842,14 +843,14 @@ export function BulkSendModal({
                               <PopoverTrigger asChild>
                                 <FormControl>
                                   <Button
-                                    variant={'outline'}
+                                    variant={"outline"}
                                     className={cn(
-                                      'w-full pl-3 text-left font-normal',
-                                      !field.value && 'text-muted-foreground',
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground",
                                     )}
                                   >
                                     {field.value ? (
-                                      format(field.value, 'PPP', {
+                                      format(field.value, "PPP", {
                                         locale: ptBR,
                                       })
                                     ) : (
@@ -902,7 +903,7 @@ export function BulkSendModal({
                     <AlertTitle>Conflito de Agendamento Detectado</AlertTitle>
                     <AlertDescription className="mt-2 flex flex-col gap-2">
                       <p>
-                        Esta campanha conflita com a campanha existente:{' '}
+                        Esta campanha conflita com a campanha existente:{" "}
                         <strong>{conflict.conflictingCampaignName}</strong>. É
                         necessário um intervalo de pelo menos 1 hora entre
                         disparos.
@@ -910,7 +911,7 @@ export function BulkSendModal({
                       {conflict.suggestedTime && (
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
                           <span className="text-sm font-medium">
-                            Sugestão:{' '}
+                            Sugestão:{" "}
                           </span>
                           <Button
                             type="button"
@@ -919,7 +920,7 @@ export function BulkSendModal({
                             className="w-fit h-8 px-2"
                             onClick={applySuggestion}
                           >
-                            Agendar para{' '}
+                            Agendar para{" "}
                             {format(conflict.suggestedTime, "dd/MM 'às' HH:mm")}
                           </Button>
                         </div>
@@ -954,14 +955,14 @@ export function BulkSendModal({
             schedule={schedule}
             contacts={orderedContacts}
             config={config!}
-            onBack={() => setStep('config')}
+            onBack={() => setStep("config")}
             onConfirm={handleFinalConfirm}
             isLoading={isLoading}
           />
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 function Loader2({ className }: { className?: string }) {
@@ -976,9 +977,9 @@ function Loader2({ className }: { className?: string }) {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={cn('animate-spin', className)}
+      className={cn("animate-spin", className)}
     >
       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
     </svg>
-  )
+  );
 }

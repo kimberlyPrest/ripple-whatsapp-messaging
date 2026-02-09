@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
-import { useAuth } from '@/hooks/use-auth'
-import { campaignsService, Campaign } from '@/services/campaigns'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { campaignsService, Campaign } from "@/services/campaigns";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -9,16 +9,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +28,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog";
 import {
   Loader2,
   Pause,
@@ -40,142 +40,142 @@ import {
   XCircle,
   AlertTriangle,
   Trash2,
-} from 'lucide-react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { supabase } from '@/lib/supabase/client'
-import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
+} from "lucide-react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { supabase } from "@/lib/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 export default function Disparos() {
-  const { user, loading: authLoading } = useAuth()
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  const [loading, setLoading] = useState(true)
-  const [pausingId, setPausingId] = useState<string | null>(null)
-  const [resumingId, setResumingId] = useState<string | null>(null)
+  const { user, loading: authLoading } = useAuth();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pausingId, setPausingId] = useState<string | null>(null);
+  const [resumingId, setResumingId] = useState<string | null>(null);
   const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(
     null,
-  )
-  const [isDeleting, setIsDeleting] = useState(false)
-  const navigate = useNavigate()
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
 
   const fetchCampaigns = useCallback(async () => {
     try {
-      const data = await campaignsService.getAll()
-      setCampaigns(data)
+      const data = await campaignsService.getAll();
+      setCampaigns(data);
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao carregar disparos')
+      console.error(error);
+      toast.error("Erro ao carregar disparos");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (user) {
-      fetchCampaigns()
+      fetchCampaigns();
 
       // Real-time updates for campaign status and progress
       const subscription = supabase
-        .channel('disparos_list')
+        .channel("disparos_list")
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: '*',
-            schema: 'public',
-            table: 'campaigns',
+            event: "*",
+            schema: "public",
+            table: "campaigns",
             filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
             // Optimistically update the list without full refetch for smoother UI
-            if (payload.eventType === 'UPDATE') {
+            if (payload.eventType === "UPDATE") {
               setCampaigns((prev) =>
                 prev.map((c) =>
                   c.id === payload.new.id ? (payload.new as Campaign) : c,
                 ),
-              )
+              );
             } else {
               // For INSERT or DELETE, refetch might be safer/easier
-              fetchCampaigns()
+              fetchCampaigns();
             }
           },
         )
-        .subscribe()
+        .subscribe();
 
       return () => {
-        subscription.unsubscribe()
-      }
+        subscription.unsubscribe();
+      };
     }
-  }, [user, fetchCampaigns])
+  }, [user, fetchCampaigns]);
 
   const handlePause = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation() // Prevent row click
-    setPausingId(id)
+    e.stopPropagation(); // Prevent row click
+    setPausingId(id);
     try {
-      await campaignsService.pause(id)
-      toast.success('Campanha pausada com sucesso')
+      await campaignsService.pause(id);
+      toast.success("Campanha pausada com sucesso");
       // Optimistic update
       setCampaigns((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, status: 'paused' } : c)),
-      )
+        prev.map((c) => (c.id === id ? { ...c, status: "paused" } : c)),
+      );
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao pausar campanha')
+      console.error(error);
+      toast.error("Erro ao pausar campanha");
     } finally {
-      setPausingId(null)
+      setPausingId(null);
     }
-  }
+  };
 
   const handleResume = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation() // Prevent row click
-    setResumingId(id)
+    e.stopPropagation(); // Prevent row click
+    setResumingId(id);
     try {
-      await campaignsService.resume(id)
-      toast.success('Campanha retomada com sucesso')
+      await campaignsService.resume(id);
+      toast.success("Campanha retomada com sucesso");
       // Optimistic update
       setCampaigns((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, status: 'active' } : c)),
-      )
+        prev.map((c) => (c.id === id ? { ...c, status: "active" } : c)),
+      );
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao retomar campanha')
+      console.error(error);
+      toast.error("Erro ao retomar campanha");
     } finally {
-      setResumingId(null)
+      setResumingId(null);
     }
-  }
+  };
 
   const handleDeleteClick = (e: React.MouseEvent, campaign: Campaign) => {
-    e.stopPropagation()
-    setCampaignToDelete(campaign)
-  }
+    e.stopPropagation();
+    setCampaignToDelete(campaign);
+  };
 
   const confirmDelete = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    if (!campaignToDelete) return
+    e.preventDefault();
+    if (!campaignToDelete) return;
 
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      await campaignsService.delete(campaignToDelete.id)
-      toast.success('Campanha excluída com sucesso')
+      await campaignsService.delete(campaignToDelete.id);
+      toast.success("Campanha excluída com sucesso");
       // Optimistic update
-      setCampaigns((prev) => prev.filter((c) => c.id !== campaignToDelete.id))
-      setCampaignToDelete(null)
+      setCampaigns((prev) => prev.filter((c) => c.id !== campaignToDelete.id));
+      setCampaignToDelete(null);
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao excluir campanha')
+      console.error(error);
+      toast.error("Erro ao excluir campanha");
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
   const handleRowClick = (id: string) => {
-    navigate(`/disparos/${id}`)
-  }
+    navigate(`/disparos/${id}`);
+  };
 
   const getStatusBadge = (status: string, hasErrors: boolean) => {
-    if (status === 'finished' && hasErrors) {
+    if (status === "finished" && hasErrors) {
       return (
         <Badge
           variant="outline"
@@ -184,41 +184,41 @@ export default function Disparos() {
           <AlertTriangle className="h-3 w-3" />
           Concluído com Erros
         </Badge>
-      )
+      );
     }
 
     switch (status) {
-      case 'finished':
+      case "finished":
         return (
           <Badge className="bg-green-500 hover:bg-green-600 gap-1">
             <CheckCircle2 className="h-3 w-3" />
             Finalizado
           </Badge>
-        )
-      case 'failed':
-      case 'error':
+        );
+      case "failed":
+      case "error":
         return (
           <Badge variant="destructive" className="gap-1">
             <XCircle className="h-3 w-3" />
             Falhou
           </Badge>
-        )
-      case 'active':
-      case 'processing':
+        );
+      case "active":
+      case "processing":
         return (
           <Badge className="bg-blue-500 hover:bg-blue-600 gap-1 animate-pulse">
             <Loader2 className="h-3 w-3 animate-spin" />
             Em Andamento
           </Badge>
-        )
-      case 'scheduled':
-      case 'pending':
+        );
+      case "scheduled":
+      case "pending":
         return (
           <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white">
             Agendado
           </Badge>
-        )
-      case 'paused':
+        );
+      case "paused":
         return (
           <Badge
             variant="secondary"
@@ -227,46 +227,46 @@ export default function Disparos() {
             <Pause className="h-3 w-3" />
             Pausado
           </Badge>
-        )
-      case 'canceled':
-        return <Badge variant="outline">Cancelado</Badge>
+        );
+      case "canceled":
+        return <Badge variant="outline">Cancelado</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="secondary">{status}</Badge>;
     }
-  }
+  };
 
   const getProgressIndicatorClass = (status: string, hasErrors: boolean) => {
-    if (status === 'finished' && hasErrors) return 'bg-orange-500'
+    if (status === "finished" && hasErrors) return "bg-orange-500";
 
     switch (status) {
-      case 'finished':
-        return 'bg-green-500'
-      case 'failed':
-      case 'error':
-        return 'bg-destructive'
-      case 'active':
-      case 'processing':
-        return 'bg-blue-500 animate-pulse'
-      case 'paused':
-        return 'bg-orange-400'
-      case 'scheduled':
-      case 'pending':
-        return 'bg-muted-foreground/30'
+      case "finished":
+        return "bg-green-500";
+      case "failed":
+      case "error":
+        return "bg-destructive";
+      case "active":
+      case "processing":
+        return "bg-blue-500 animate-pulse";
+      case "paused":
+        return "bg-orange-400";
+      case "scheduled":
+      case "pending":
+        return "bg-muted-foreground/30";
       default:
-        return 'bg-primary'
+        return "bg-primary";
     }
-  }
+  };
 
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -359,22 +359,22 @@ export default function Disparos() {
                 </TableHeader>
                 <TableBody>
                   {campaigns.map((campaign) => {
-                    const total = Math.max(campaign.total_messages || 0, 0)
+                    const total = Math.max(campaign.total_messages || 0, 0);
                     // Ensure sent is not negative and respect the DB value, clamping to total is optional but good for UI sanity if DB desyncs
                     const sent = Math.min(
                       Math.max(campaign.sent_messages || 0, 0),
                       total,
-                    )
+                    );
                     const percentage =
-                      total > 0 ? Math.round((sent / total) * 100) : 0
+                      total > 0 ? Math.round((sent / total) * 100) : 0;
 
-                    const status = campaign.status || 'unknown'
-                    const isActive = ['active', 'processing'].includes(status)
-                    const isPaused = status === 'paused'
+                    const status = campaign.status || "unknown";
+                    const isActive = ["active", "processing"].includes(status);
+                    const isPaused = status === "paused";
 
                     // Logic to detect if finished with errors:
                     // Status is 'finished' BUT sent messages count is less than total messages count
-                    const hasErrors = status === 'finished' && sent < total
+                    const hasErrors = status === "finished" && sent < total;
 
                     return (
                       <TableRow
@@ -390,7 +390,7 @@ export default function Disparos() {
                             <span className="text-xs text-muted-foreground md:hidden">
                               {format(
                                 new Date(campaign.created_at),
-                                'dd/MM/yyyy',
+                                "dd/MM/yyyy",
                                 { locale: ptBR },
                               )}
                             </span>
@@ -476,8 +476,8 @@ export default function Disparos() {
                               size="icon"
                               className="h-8 w-8"
                               onClick={(e) => {
-                                e.stopPropagation()
-                                handleRowClick(campaign.id)
+                                e.stopPropagation();
+                                handleRowClick(campaign.id);
                               }}
                             >
                               <Eye className="h-4 w-4" />
@@ -486,7 +486,7 @@ export default function Disparos() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    )
+                    );
                   })}
                 </TableBody>
               </Table>
@@ -506,7 +506,7 @@ export default function Disparos() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação não pode ser desfeita e excluirá todo o histórico de
-              mensagens associado à campanha{' '}
+              mensagens associado à campanha{" "}
               <span className="font-medium text-foreground">
                 "{campaignToDelete?.name}"
               </span>
@@ -521,8 +521,8 @@ export default function Disparos() {
               disabled={isDeleting}
               onClick={confirmDelete}
               className={cn(
-                buttonVariants({ variant: 'destructive' }),
-                'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+                buttonVariants({ variant: "destructive" }),
+                "bg-destructive text-destructive-foreground hover:bg-destructive/90",
               )}
             >
               {isDeleting ? (
@@ -531,12 +531,12 @@ export default function Disparos() {
                   Excluindo...
                 </>
               ) : (
-                'Excluir'
+                "Excluir"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

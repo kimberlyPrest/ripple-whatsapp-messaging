@@ -1,37 +1,37 @@
-import { ShieldAlert, Store, AlertTriangle, Calendar } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { ShieldAlert, Store, AlertTriangle, Calendar } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function Features() {
   const features = [
     {
       icon: ShieldAlert,
-      title: 'Blindagem de Conta',
+      title: "Blindagem de Conta",
       description:
-        'Intervalos humanizados e pausas periódicas automáticas para proteger seu número.',
-      color: 'bg-green-100 text-green-600',
+        "Intervalos humanizados e pausas periódicas automáticas para proteger seu número.",
+      color: "bg-green-100 text-green-600",
     },
     {
       icon: Store,
-      title: 'Horário Comercial',
+      title: "Horário Comercial",
       description:
-        'O sistema pausa automaticamente fora do seu horário de atendimento definido.',
-      color: 'bg-blue-100 text-blue-600',
+        "O sistema pausa automaticamente fora do seu horário de atendimento definido.",
+      color: "bg-blue-100 text-blue-600",
     },
     {
       icon: AlertTriangle,
-      title: 'Gestão de Erros',
+      title: "Gestão de Erros",
       description:
-        'Notificações instantâneas de mensagens falhadas para correção rápida na lista.',
-      color: 'bg-amber-100 text-amber-600',
+        "Notificações instantâneas de mensagens falhadas para correção rápida na lista.",
+      color: "bg-amber-100 text-amber-600",
     },
     {
       icon: Calendar,
-      title: 'Agendamento Estratégico',
+      title: "Agendamento Estratégico",
       description:
-        'Planeje suas campanhas com antecedência e deixe o Ripple trabalhar por você.',
-      color: 'bg-purple-100 text-purple-600',
+        "Planeje suas campanhas com antecedência e deixe o Ripple trabalhar por você.",
+      color: "bg-purple-100 text-purple-600",
     },
-  ]
+  ];
 
   return (
     <section className="py-20 bg-[#f6f8f6]">
@@ -69,5 +69,5 @@ export function Features() {
         </div>
       </div>
     </section>
-  )
+  );
 }

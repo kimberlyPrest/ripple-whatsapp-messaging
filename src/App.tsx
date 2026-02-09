@@ -1,20 +1,20 @@
 /* Main App Component - Handles routing (using react-router-dom), query client and other providers */
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Toaster } from '@/components/ui/toaster'
-import { Toaster as Sonner } from '@/components/ui/sonner'
-import { TooltipProvider } from '@/components/ui/tooltip'
-import Index from './pages/Index'
-import Site from './pages/Site'
-import Upload from './pages/Upload'
-import Login from './pages/Login'
-import SignUp from './pages/SignUp'
-import Dashboard from './pages/Dashboard'
-import Disparos from './pages/Disparos'
-import DisparoDetalhes from './pages/DisparoDetalhes'
-import Settings from './pages/Settings'
-import NotFound from './pages/NotFound'
-import Layout from './components/Layout'
-import { AuthProvider } from '@/hooks/use-auth'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import Index from "./pages/Index";
+import Site from "./pages/Site";
+import Upload from "./pages/Upload";
+import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
+import Dashboard from "./pages/Dashboard";
+import Disparos from "./pages/Disparos";
+import DisparoDetalhes from "./pages/DisparoDetalhes";
+import Settings from "./pages/Settings";
+import NotFound from "./pages/NotFound";
+import Layout from "./components/Layout";
+import { AuthProvider } from "@/hooks/use-auth";
 
 const App = () => (
   <AuthProvider>
@@ -41,6 +41,6 @@ const App = () => (
       </TooltipProvider>
     </BrowserRouter>
   </AuthProvider>
-)
+);
 
-export default App
+export default App;

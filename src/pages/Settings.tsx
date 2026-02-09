@@ -1,17 +1,17 @@
-import { useEffect, useState, useRef } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { useAuth } from '@/hooks/use-auth'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useEffect, useState, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -20,117 +20,117 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Loader2, Save, User as UserIcon, Camera, Upload } from 'lucide-react'
-import { toast } from 'sonner'
-import { profileService } from '@/services/profile'
-import { Navigate } from 'react-router-dom'
+} from "@/components/ui/form";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2, Save, User as UserIcon, Camera, Upload } from "lucide-react";
+import { toast } from "sonner";
+import { profileService } from "@/services/profile";
+import { Navigate } from "react-router-dom";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
-    message: 'O nome deve ter pelo menos 2 caracteres.',
+    message: "O nome deve ter pelo menos 2 caracteres.",
   }),
   email: z.string().email(),
-})
+});
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function Settings() {
-  const { user, loading: authLoading } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { user, loading: authLoading } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: '',
-      email: '',
+      name: "",
+      email: "",
     },
-    mode: 'onChange',
-  })
+    mode: "onChange",
+  });
 
   useEffect(() => {
     async function loadProfile() {
-      if (!user) return
+      if (!user) return;
 
       try {
-        const profile = await profileService.get(user.id)
+        const profile = await profileService.get(user.id);
         if (profile) {
           form.reset({
-            name: profile.name || '',
-            email: user.email || '',
-          })
+            name: profile.name || "",
+            email: user.email || "",
+          });
           if (profile.avatar_url) {
-            setPreviewUrl(profile.avatar_url)
+            setPreviewUrl(profile.avatar_url);
           }
         } else {
           form.reset({
-            name: '',
-            email: user.email || '',
-          })
+            name: "",
+            email: user.email || "",
+          });
         }
       } catch (error) {
-        console.error(error)
-        toast.error('Erro ao carregar perfil')
+        console.error(error);
+        toast.error("Erro ao carregar perfil");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
     if (user) {
-      loadProfile()
+      loadProfile();
     }
-  }, [user, form])
+  }, [user, form]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('A imagem deve ter no máximo 5MB')
-        return
+        toast.error("A imagem deve ter no máximo 5MB");
+        return;
       }
-      setAvatarFile(file)
-      const objectUrl = URL.createObjectURL(file)
-      setPreviewUrl(objectUrl)
+      setAvatarFile(file);
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
     }
-  }
+  };
 
   const triggerFileInput = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   async function onSubmit(data: ProfileFormValues) {
-    if (!user) return
-    setIsSaving(true)
+    if (!user) return;
+    setIsSaving(true);
 
     try {
-      let avatarUrl = undefined
+      let avatarUrl = undefined;
 
       if (avatarFile) {
         try {
-          avatarUrl = await profileService.uploadAvatar(user.id, avatarFile)
+          avatarUrl = await profileService.uploadAvatar(user.id, avatarFile);
         } catch (error) {
-          console.error('Error uploading avatar:', error)
-          toast.error('Erro ao fazer upload da imagem')
-          throw error
+          console.error("Error uploading avatar:", error);
+          toast.error("Erro ao fazer upload da imagem");
+          throw error;
         }
       }
 
       await profileService.update(user.id, {
         name: data.name,
         ...(avatarUrl && { avatar_url: avatarUrl }),
-      })
+      });
 
-      toast.success('Perfil atualizado com sucesso!')
+      toast.success("Perfil atualizado com sucesso!");
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao atualizar perfil')
+      console.error(error);
+      toast.error("Erro ao atualizar perfil");
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
   }
 
@@ -139,22 +139,22 @@ export default function Settings() {
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
 
-  const userInitials = form.getValues('name')
+  const userInitials = form.getValues("name")
     ? form
-        .getValues('name')
-        .split(' ')
+        .getValues("name")
+        .split(" ")
         .map((n) => n[0])
-        .join('')
+        .join("")
         .toUpperCase()
         .slice(0, 2)
-    : user.email?.substring(0, 2).toUpperCase()
+    : user.email?.substring(0, 2).toUpperCase();
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in-up">
@@ -191,7 +191,7 @@ export default function Settings() {
                         onClick={triggerFileInput}
                       >
                         <AvatarImage
-                          src={previewUrl || ''}
+                          src={previewUrl || ""}
                           alt="Foto de perfil"
                           className="object-cover"
                         />
@@ -289,5 +289,5 @@ export default function Settings() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

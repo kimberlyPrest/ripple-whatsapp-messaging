@@ -1,4 +1,4 @@
-import { TableProperties, Settings, Send } from 'lucide-react'
+import { TableProperties, Settings, Send } from "lucide-react";
 
 export function Steps() {
   return (
@@ -75,5 +75,5 @@ export function Steps() {
         </div>
       </div>
     </section>
-  )
+  );
 }

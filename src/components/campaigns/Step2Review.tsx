@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -6,12 +6,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Card } from '@/components/ui/card'
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -19,7 +19,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
+} from "@/components/ui/breadcrumb";
 import {
   Trash2,
   Send,
@@ -28,12 +28,12 @@ import {
   Users,
   Loader2,
   Trash,
-} from 'lucide-react'
-import { campaignsService, CampaignMessage } from '@/services/campaigns'
-import { contactsService, Contact } from '@/services/contacts'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
-import { EditContactDialog } from '@/components/contacts/EditContactDialog'
+} from "lucide-react";
+import { campaignsService, CampaignMessage } from "@/services/campaigns";
+import { contactsService, Contact } from "@/services/contacts";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { EditContactDialog } from "@/components/contacts/EditContactDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,84 +44,84 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog";
 
 interface Step2ReviewProps {
-  campaignId: string
-  onBack: () => void
-  onNext: () => void
+  campaignId: string;
+  onBack: () => void;
+  onNext: () => void;
 }
 
 export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
-  const [messages, setMessages] = useState<CampaignMessage[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [messages, setMessages] = useState<CampaignMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Edit Dialog State
-  const [editingContact, setEditingContact] = useState<Contact | null>(null)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
-    fetchMessages()
-  }, [campaignId])
+    fetchMessages();
+  }, [campaignId]);
 
   const fetchMessages = async () => {
     try {
-      setIsLoading(true)
-      const data = await campaignsService.getMessages(campaignId)
-      setMessages(data)
+      setIsLoading(true);
+      const data = await campaignsService.getMessages(campaignId);
+      setMessages(data);
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao carregar contatos')
+      console.error(error);
+      toast.error("Erro ao carregar contatos");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const toggleSelectAll = () => {
     if (selectedIds.length === messages.length) {
-      setSelectedIds([])
+      setSelectedIds([]);
     } else {
-      setSelectedIds(messages.map((m) => m.id))
+      setSelectedIds(messages.map((m) => m.id));
     }
-  }
+  };
 
   const toggleSelectOne = (id: string) => {
     if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter((item) => item !== id))
+      setSelectedIds(selectedIds.filter((item) => item !== id));
     } else {
-      setSelectedIds([...selectedIds, id])
+      setSelectedIds([...selectedIds, id]);
     }
-  }
+  };
 
   const handleDelete = async (messageId: string) => {
     try {
-      await campaignsService.deleteMessage(messageId)
-      setMessages((prev) => prev.filter((m) => m.id !== messageId))
-      setSelectedIds((prev) => prev.filter((id) => id !== messageId))
-      toast.success('Contato removido da campanha')
+      await campaignsService.deleteMessage(messageId);
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      setSelectedIds((prev) => prev.filter((id) => id !== messageId));
+      toast.success("Contato removido da campanha");
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao remover contato')
+      console.error(error);
+      toast.error("Erro ao remover contato");
     }
-  }
+  };
 
   const handleBulkDelete = async () => {
-    if (selectedIds.length === 0) return
-    setIsDeleting(true)
+    if (selectedIds.length === 0) return;
+    setIsDeleting(true);
     try {
-      await campaignsService.deleteMessagesBulk(selectedIds)
-      setMessages((prev) => prev.filter((m) => !selectedIds.includes(m.id)))
-      setSelectedIds([])
-      toast.success(`${selectedIds.length} contatos removidos`)
+      await campaignsService.deleteMessagesBulk(selectedIds);
+      setMessages((prev) => prev.filter((m) => !selectedIds.includes(m.id)));
+      setSelectedIds([]);
+      toast.success(`${selectedIds.length} contatos removidos`);
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao remover contatos')
+      console.error(error);
+      toast.error("Erro ao remover contatos");
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
   const handleEditClick = (message: CampaignMessage) => {
     // Construct a Contact object from the joined data to pass to EditContactDialog
@@ -130,18 +130,18 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
         id: message.contact_id,
         name: message.contacts.name,
         phone: message.contacts.phone,
-        message: (message.contacts as any).message || '',
-        created_at: '',
-        user_id: '',
-        status: 'pendente',
-      }
-      setEditingContact(contact)
-      setIsEditDialogOpen(true)
+        message: (message.contacts as any).message || "",
+        created_at: "",
+        user_id: "",
+        status: "pendente",
+      };
+      setEditingContact(contact);
+      setIsEditDialogOpen(true);
     }
-  }
+  };
 
   const handleSendOne = async (message: CampaignMessage) => {
-    if (!message.contacts) return
+    if (!message.contacts) return;
 
     // Simulate send or actual send? Step 2 is Review.
     // User story: "hoverable actions (individual Send, Edit, and Delete)"
@@ -153,28 +153,28 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
         id: message.contact_id,
         name: message.contacts.name,
         phone: message.contacts.phone,
-        message: (message.contacts as any).message || '',
-        created_at: '',
-        user_id: '',
-        status: 'pendente',
-      }
+        message: (message.contacts as any).message || "",
+        created_at: "",
+        user_id: "",
+        status: "pendente",
+      };
 
-      await contactsService.sendWhatsappMessage(contact)
-      toast.success(`Mensagem enviada para ${contact.name}`)
+      await contactsService.sendWhatsappMessage(contact);
+      toast.success(`Mensagem enviada para ${contact.name}`);
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao enviar mensagem')
+      console.error(error);
+      toast.error("Erro ao enviar mensagem");
     }
-  }
+  };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
       .slice(0, 2)
-      .join('')
-      .toUpperCase()
-  }
+      .join("")
+      .toUpperCase();
+  };
 
   return (
     <div className="space-y-6 animate-fade-in-up font-noto">
@@ -185,8 +185,8 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
             <BreadcrumbLink
               href="/upload"
               onClick={(e) => {
-                e.preventDefault()
-                onBack()
+                e.preventDefault();
+                onBack();
               }}
             >
               Novo Disparo
@@ -315,7 +315,7 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
                       className="group transition-colors hover:bg-muted/30"
                       data-state={
                         selectedIds.includes(message.id)
-                          ? 'selected'
+                          ? "selected"
                           : undefined
                       }
                     >
@@ -329,7 +329,7 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10 border border-border">
                             <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                              {getInitials(message.contacts?.name || '?')}
+                              {getInitials(message.contacts?.name || "?")}
                             </AvatarFallback>
                           </Avatar>
                           <span className="font-medium text-foreground">
@@ -398,7 +398,7 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
             {isDeleting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              'Excluir Selecionados'
+              "Excluir Selecionados"
             )}
           </Button>
         </div>
@@ -433,5 +433,5 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
         onSuccess={fetchMessages}
       />
     </div>
-  )
+  );
 }

@@ -1,0 +1,4 @@
+-- This migration is intentionally left empty.
+-- The original content attempted to create tables in the system 'auth' schema (e.g. auth.sso_providers).
+-- The 'auth' schema is managed by Supabase and should not be modified by user migrations.
+-- Clearing this file resolves the "permission denied for schema auth" error.

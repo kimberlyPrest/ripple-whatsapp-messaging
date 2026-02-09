@@ -1,15 +1,15 @@
-import { useEffect, useState, useCallback } from 'react'
-import { useAuth } from '@/hooks/use-auth'
-import { campaignsService, Campaign } from '@/services/campaigns'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { campaignsService, Campaign } from "@/services/campaigns";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Link, Navigate } from 'react-router-dom'
+} from "@/components/ui/card";
+import { Link, Navigate } from "react-router-dom";
 import {
   Loader2,
   MessageSquare,
@@ -21,136 +21,136 @@ import {
   Table as TableIcon,
   Sliders,
   Rocket,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import { format } from 'date-fns'
-import { supabase } from '@/lib/supabase/client'
-import { cn } from '@/lib/utils'
-import { Skeleton } from '@/components/ui/skeleton'
+} from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { supabase } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
-  const { user, loading: authLoading } = useAuth()
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchCampaigns = useCallback(async () => {
     try {
-      const data = await campaignsService.getAll()
-      setCampaigns(data)
+      const data = await campaignsService.getAll();
+      setCampaigns(data);
     } catch (error) {
-      console.error(error)
-      toast.error('Erro ao carregar campanhas')
+      console.error(error);
+      toast.error("Erro ao carregar campanhas");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (user) {
-      fetchCampaigns()
+      fetchCampaigns();
 
       // Real-time updates
       const subscription = supabase
-        .channel('dashboard_campaigns')
+        .channel("dashboard_campaigns")
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: '*',
-            schema: 'public',
-            table: 'campaigns',
+            event: "*",
+            schema: "public",
+            table: "campaigns",
             filter: `user_id=eq.${user.id}`,
           },
           () => {
-            fetchCampaigns()
+            fetchCampaigns();
           },
         )
-        .subscribe()
+        .subscribe();
 
       return () => {
-        subscription.unsubscribe()
-      }
+        subscription.unsubscribe();
+      };
     }
-  }, [user, fetchCampaigns])
+  }, [user, fetchCampaigns]);
 
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
 
   // Dashboard View Logic
   const totalMessagesSent = campaigns.reduce(
     (acc, curr) => acc + (curr.sent_messages || 0),
     0,
-  )
+  );
   const totalExecutionTime = campaigns.reduce(
     (acc, curr) => acc + (curr.execution_time || 0),
     0,
-  ) // in seconds
-  const totalCampaigns = campaigns.length
+  ); // in seconds
+  const totalCampaigns = campaigns.length;
 
   // Filter including active, scheduled, pending and processing states
   const activeOrScheduled = campaigns.filter((c) =>
-    ['active', 'scheduled', 'pending', 'processing'].includes(c.status),
-  )
+    ["active", "scheduled", "pending", "processing"].includes(c.status),
+  );
 
   const formatTime = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
 
     if (minutes > 60) {
-      const hours = Math.floor(minutes / 60)
-      const remMin = minutes % 60
-      return `${hours}h ${remMin}m`
+      const hours = Math.floor(minutes / 60);
+      const remMin = minutes % 60;
+      return `${hours}h ${remMin}m`;
     }
 
-    return `${minutes}m ${remainingSeconds > 0 ? `${remainingSeconds}s` : ''}`
-  }
+    return `${minutes}m ${remainingSeconds > 0 ? `${remainingSeconds}s` : ""}`;
+  };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'Ativo'
-      case 'processing':
-        return 'Processando'
-      case 'scheduled':
-        return 'Agendado'
-      case 'pending':
-        return 'Pendente'
-      case 'finished':
-        return 'Finalizado'
-      case 'failed':
-        return 'Falhou'
-      case 'paused':
-        return 'Pausado'
+      case "active":
+        return "Ativo";
+      case "processing":
+        return "Processando";
+      case "scheduled":
+        return "Agendado";
+      case "pending":
+        return "Pendente";
+      case "finished":
+        return "Finalizado";
+      case "failed":
+        return "Falhou";
+      case "paused":
+        return "Pausado";
       default:
-        return status
+        return status;
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-      case 'processing':
-        return 'bg-green-100 text-green-700 border-green-200'
-      case 'scheduled':
-      case 'pending':
-        return 'bg-blue-100 text-blue-700 border-blue-200'
-      case 'paused':
-        return 'bg-amber-100 text-amber-700 border-amber-200'
-      case 'failed':
-        return 'bg-red-100 text-red-700 border-red-200'
+      case "active":
+      case "processing":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "scheduled":
+      case "pending":
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      case "paused":
+        return "bg-amber-100 text-amber-700 border-amber-200";
+      case "failed":
+        return "bg-red-100 text-red-700 border-red-200";
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200'
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -210,7 +210,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (campaigns.length === 0) {
@@ -341,7 +341,7 @@ export default function Dashboard() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-bl-[100%] -z-0 opacity-50" />
         </div>
       </div>
-    )
+    );
   }
 
   // Normal Dashboard (Populated)
@@ -458,7 +458,7 @@ export default function Dashboard() {
                     </CardTitle>
                     <span
                       className={cn(
-                        'px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0',
+                        "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0",
                         getStatusColor(campaign.status),
                       )}
                     >
@@ -471,7 +471,7 @@ export default function Dashboard() {
                         <Calendar className="h-3 w-3" />
                         {format(
                           new Date(campaign.scheduled_at),
-                          'dd/MM/yyyy HH:mm',
+                          "dd/MM/yyyy HH:mm",
                         )}
                       </span>
                     ) : (
@@ -507,13 +507,13 @@ export default function Dashboard() {
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground border-t pt-2 mt-2">
                       <span>
-                        Enviados:{' '}
+                        Enviados:{" "}
                         <strong className="text-foreground">
                           {campaign.sent_messages || 0}
                         </strong>
                       </span>
                       <span>
-                        Total:{' '}
+                        Total:{" "}
                         <strong className="text-foreground">
                           {campaign.total_messages}
                         </strong>
@@ -527,5 +527,5 @@ export default function Dashboard() {
         )}
       </div>
     </div>
-  )
+  );
 }

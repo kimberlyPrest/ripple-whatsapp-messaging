@@ -1,16 +1,16 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ScheduleConfig } from '@/lib/campaign-utils'
-import { Settings2, Clock, Zap, Briefcase } from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScheduleConfig } from "@/lib/campaign-utils";
+import { Settings2, Clock, Zap, Briefcase } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface CampaignConfigProps {
-  config: ScheduleConfig | null
-  scheduledAt: string | null
+  config: ScheduleConfig | null;
+  scheduledAt: string | null;
 }
 
 export function CampaignConfig({ config, scheduledAt }: CampaignConfigProps) {
-  if (!config) return null
+  if (!config) return null;
 
   return (
     <Card>
@@ -39,7 +39,7 @@ export function CampaignConfig({ config, scheduledAt }: CampaignConfigProps) {
           <p className="font-medium">
             {config.useBatching
               ? `${config.batchSize} msgs / pausa de ${config.batchPauseMin}-${config.batchPauseMax}s`
-              : 'Desativado'}
+              : "Desativado"}
           </p>
         </div>
 
@@ -49,9 +49,9 @@ export function CampaignConfig({ config, scheduledAt }: CampaignConfigProps) {
             <span>Horário Comercial</span>
           </div>
           <p className="font-medium">
-            {config.businessHoursStrategy === 'pause'
-              ? `Respeitar (${config.businessHoursPauseTime || '18:00'} - ${config.businessHoursResumeTime || '08:00'})`
-              : 'Ignorar (Envio contínuo)'}
+            {config.businessHoursStrategy === "pause"
+              ? `Respeitar (${config.businessHoursPauseTime || "18:00"} - ${config.businessHoursResumeTime || "08:00"})`
+              : "Ignorar (Envio contínuo)"}
           </p>
         </div>
 
@@ -65,10 +65,10 @@ export function CampaignConfig({ config, scheduledAt }: CampaignConfigProps) {
               ? format(new Date(scheduledAt), "dd/MM/yyyy 'às' HH:mm", {
                   locale: ptBR,
                 })
-              : 'Imediato'}
+              : "Imediato"}
           </p>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

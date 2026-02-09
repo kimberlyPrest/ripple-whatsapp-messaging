@@ -27,5 +27,5 @@ export function Metrics() {
         </div>
       </div>
     </section>
-  )
+  );
 }
