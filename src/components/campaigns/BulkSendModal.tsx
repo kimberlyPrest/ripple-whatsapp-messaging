@@ -1,0 +1,984 @@
+import { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { format, addSeconds } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import {
+  Calendar as CalendarIcon,
+  Info,
+  AlertTriangle,
+  Clock,
+  Users,
+  Sun,
+  PauseCircle,
+  AlertCircle,
+  CalendarClock,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { Switch } from '@/components/ui/switch'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { campaignsService, Campaign } from '@/services/campaigns'
+import { toast } from 'sonner'
+import { useAuth } from '@/hooks/use-auth'
+import { CampaignConfirmationStep } from './CampaignConfirmationStep'
+import {
+  calculateCampaignSchedule,
+  ScheduleConfig,
+  ScheduledMessage,
+  checkScheduleConflict,
+  ConflictResult,
+} from '@/lib/campaign-utils'
+import { contactsService, Contact } from '@/services/contacts'
+
+const formSchema = z
+  .object({
+    name: z.string().min(1, 'Nome da campanha é obrigatório'),
+    minInterval: z.coerce
+      .number()
+      .min(5, 'O intervalo mínimo deve ser de pelo menos 5 segundos'),
+    maxInterval: z.coerce.number(),
+    scheduleType: z.enum(['immediate', 'scheduled']),
+    scheduledDate: z.date().optional(),
+    scheduledTime: z.string().optional(),
+
+    useBatching: z.boolean().default(false),
+    batchSize: z.coerce.number().optional(),
+    batchPauseMin: z.coerce.number().optional(),
+    batchPauseMax: z.coerce.number().optional(),
+
+    businessHoursStrategy: z.enum(['ignore', 'pause']).default('ignore'),
+    businessHoursPauseTime: z.string().default('18:00'),
+    businessHoursResumeTime: z.string().default('08:00'),
+
+    // New Automatic Pause fields
+    automaticPause: z.boolean().default(false),
+    pauseTime: z.string().optional(),
+    resumeDate: z.date().optional(),
+    resumeTime: z.string().optional(),
+  })
+  .refine((data) => data.maxInterval >= data.minInterval, {
+    message: 'O intervalo máximo deve ser maior ou igual ao mínimo',
+    path: ['maxInterval'],
+  })
+  .refine(
+    (data) => {
+      if (data.scheduleType === 'scheduled') {
+        return !!data.scheduledDate && !!data.scheduledTime
+      }
+      return true
+    },
+    {
+      message: 'Data e hora são obrigatórios para agendamento',
+      path: ['scheduledDate'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.useBatching) {
+        if (!data.batchSize || data.batchSize < 1) return false
+        if (!data.batchPauseMin || data.batchPauseMin < 1) return false
+        if (!data.batchPauseMax || data.batchPauseMax < data.batchPauseMin)
+          return false
+      }
+      return true
+    },
+    {
+      message:
+        'Configuração de pausas inválida. Verifique o tamanho do lote e os intervalos.',
+      path: ['batchSize'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.businessHoursStrategy === 'pause') {
+        return !!data.businessHoursPauseTime && !!data.businessHoursResumeTime
+      }
+      return true
+    },
+    {
+      message: 'Defina os horários de pausa e retomada',
+      path: ['businessHoursPauseTime'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.automaticPause) {
+        return !!data.pauseTime && !!data.resumeDate && !!data.resumeTime
+      }
+      return true
+    },
+    {
+      message: 'Preencha todos os campos da pausa automática',
+      path: ['pauseTime'],
+    },
+  )
+
+interface BulkSendModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  selectedContactIds: string[]
+  onSuccess: () => void
+}
+
+export function BulkSendModal({
+  open,
+  onOpenChange,
+  selectedContactIds,
+  onSuccess,
+}: BulkSendModalProps) {
+  const { user } = useAuth()
+  const [step, setStep] = useState<'config' | 'confirm'>('config')
+  const [isLoading, setIsLoading] = useState(false)
+  const [orderedContacts, setOrderedContacts] = useState<
+    (Contact | undefined)[]
+  >([])
+  const [schedule, setSchedule] = useState<ScheduledMessage[]>([])
+  const [config, setConfig] = useState<ScheduleConfig | null>(null)
+
+  // Validation State
+  const [existingCampaigns, setExistingCampaigns] = useState<
+    Partial<Campaign>[]
+  >([])
+  const [conflict, setConflict] = useState<ConflictResult>({
+    hasConflict: false,
+  })
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      minInterval: 30,
+      maxInterval: 60,
+      scheduleType: 'immediate',
+      scheduledDate: new Date(),
+      scheduledTime: format(addSeconds(new Date(), 600), 'HH:mm'),
+      useBatching: false,
+      batchSize: 50,
+      batchPauseMin: 300,
+      batchPauseMax: 600,
+      businessHoursStrategy: 'ignore',
+      businessHoursPauseTime: '18:00',
+      businessHoursResumeTime: '08:00',
+      automaticPause: false,
+    },
+  })
+
+  const watchedValues = form.watch()
+  const {
+    minInterval,
+    maxInterval,
+    scheduleType,
+    scheduledDate,
+    scheduledTime,
+    useBatching,
+    batchSize,
+    batchPauseMin,
+    batchPauseMax,
+    businessHoursStrategy,
+    businessHoursPauseTime,
+    businessHoursResumeTime,
+    automaticPause,
+    pauseTime,
+    resumeDate,
+    resumeTime,
+  } = watchedValues
+
+  useEffect(() => {
+    if (open) {
+      setStep('config')
+      form.reset()
+      setOrderedContacts([])
+      setSchedule([])
+      setConfig(null)
+      setConflict({ hasConflict: false })
+
+      campaignsService
+        .getActiveAndScheduled()
+        .then((data) => {
+          setExistingCampaigns(data)
+        })
+        .catch((err) => {
+          console.error('Failed to load campaigns for validation', err)
+        })
+    }
+  }, [open, form])
+
+  const getStartTime = () => {
+    if (scheduleType === 'scheduled' && scheduledDate && scheduledTime) {
+      const [hours, minutes] = scheduledTime.split(':').map(Number)
+      const date = new Date(scheduledDate)
+      date.setHours(hours, minutes)
+      return date
+    }
+    return new Date()
+  }
+
+  useEffect(() => {
+    if (!open || existingCampaigns.length === 0) return
+
+    const startTime = getStartTime()
+    const currentConfig: ScheduleConfig = {
+      minInterval: Number(minInterval),
+      maxInterval: Number(maxInterval),
+      useBatching: !!useBatching,
+      batchSize: Number(batchSize),
+      batchPauseMin: Number(batchPauseMin),
+      batchPauseMax: Number(batchPauseMax),
+      businessHoursStrategy: businessHoursStrategy as 'ignore' | 'pause',
+      businessHoursPauseTime,
+      businessHoursResumeTime,
+      automaticPause,
+      pauseTime,
+      resumeDate,
+      resumeTime,
+      startTime,
+    }
+
+    const result = checkScheduleConflict(
+      currentConfig,
+      selectedContactIds.length,
+      existingCampaigns as any[],
+    )
+
+    setConflict(result)
+  }, [
+    open,
+    existingCampaigns,
+    selectedContactIds.length,
+    minInterval,
+    maxInterval,
+    scheduleType,
+    scheduledDate,
+    scheduledTime,
+    useBatching,
+    batchSize,
+    batchPauseMin,
+    batchPauseMax,
+    businessHoursStrategy,
+    businessHoursPauseTime,
+    businessHoursResumeTime,
+    automaticPause,
+    pauseTime,
+    resumeDate,
+    resumeTime,
+  ])
+
+  const count = selectedContactIds.length
+  const avgInterval = (Number(minInterval) + Number(maxInterval)) / 2
+  const estimatedTime = Math.max(0, count - 1) * avgInterval
+
+  const formattedEstimatedTime = () => {
+    if (count <= 1) return '0s (Imediato)'
+    if (!estimatedTime) return '0s'
+
+    const minutes = Math.floor(estimatedTime / 60)
+    const seconds = Math.floor(estimatedTime % 60)
+    if (minutes > 60) {
+      const hours = Math.floor(minutes / 60)
+      const remainingMinutes = minutes % 60
+      return `${hours}h ${remainingMinutes}m ${seconds}s`
+    }
+    return `${minutes} min ${seconds}s`
+  }
+
+  const isOutsideBusinessHours = () => {
+    const start = getStartTime()
+    const hours = start.getHours()
+    return hours < 8 || hours >= 18
+  }
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (conflict.hasConflict) {
+      toast.error('Corrija o conflito de agendamento antes de prosseguir.')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const fetchedContacts = await contactsService.getByIds(selectedContactIds)
+      const alignedContacts = selectedContactIds.map((id) =>
+        fetchedContacts.find((c) => c.id === id),
+      )
+
+      const startTime = getStartTime()
+      const scheduleConfig: ScheduleConfig = {
+        minInterval: values.minInterval,
+        maxInterval: values.maxInterval,
+        useBatching: values.useBatching,
+        batchSize: values.batchSize,
+        batchPauseMin: values.batchPauseMin,
+        batchPauseMax: values.batchPauseMax,
+        businessHoursStrategy: values.businessHoursStrategy,
+        businessHoursPauseTime: values.businessHoursPauseTime,
+        businessHoursResumeTime: values.businessHoursResumeTime,
+        automaticPause: values.automaticPause,
+        pauseTime: values.pauseTime,
+        resumeDate: values.resumeDate,
+        resumeTime: values.resumeTime,
+        startTime: startTime,
+      }
+
+      const calculatedSchedule = calculateCampaignSchedule(
+        scheduleConfig,
+        selectedContactIds.length,
+      )
+
+      setOrderedContacts(alignedContacts)
+      setConfig(scheduleConfig)
+      setSchedule(calculatedSchedule)
+      setStep('confirm')
+    } catch (err) {
+      console.error(err)
+      toast.error('Erro ao preparar confirmação.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleFinalConfirm = async () => {
+    if (!user || !config) {
+      toast.error('Erro de autenticação ou configuração.')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const values = form.getValues()
+      let scheduledAt = config.startTime.toISOString()
+
+      const campaignConfig = {
+        min_interval: values.minInterval,
+        max_interval: values.maxInterval,
+        batch_config: values.useBatching
+          ? {
+              enabled: true,
+              size: values.batchSize,
+              pause_min: values.batchPauseMin,
+              pause_max: values.batchPauseMax,
+            }
+          : { enabled: false },
+        business_hours: {
+          strategy: values.businessHoursStrategy,
+          pause_at: values.businessHoursPauseTime,
+          resume_at: values.businessHoursResumeTime,
+        },
+        automatic_pause: values.automaticPause
+          ? {
+              enabled: true,
+              pause_at: values.pauseTime,
+              resume_date: values.resumeDate?.toISOString(),
+              resume_time: values.resumeTime,
+            }
+          : { enabled: false },
+      }
+
+      await campaignsService.create(
+        {
+          name: values.name,
+          user_id: user.id,
+          status: values.scheduleType === 'scheduled' ? 'scheduled' : 'active',
+          total_messages: selectedContactIds.length,
+          scheduled_at: scheduledAt,
+          config: campaignConfig,
+        },
+        selectedContactIds,
+      )
+
+      toast.success('Campanha iniciada com sucesso!')
+      onSuccess()
+      onOpenChange(false)
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao salvar campanha')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const applySuggestion = () => {
+    if (conflict.suggestedTime) {
+      form.setValue('scheduleType', 'scheduled')
+      form.setValue('scheduledDate', conflict.suggestedTime)
+      form.setValue('scheduledTime', format(conflict.suggestedTime, 'HH:mm'))
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        {step === 'config' ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Configurar Envio em Massa</DialogTitle>
+              <DialogDescription>
+                Defina os parâmetros para o envio de mensagens para{' '}
+                {selectedContactIds.length} contatos.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome da Campanha</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ex: Promoção de Verão"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="minInterval"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-2">
+                            <FormLabel>Intervalo Mínimo (s)</FormLabel>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Tempo mínimo aleatório entre envios.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="maxInterval"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Intervalo Máximo (s)</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-muted/30 p-4 rounded-lg border flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Tempo Total Estimado (Médio):
+                    </span>
+                  </div>
+                  <span className="text-lg font-bold text-primary">
+                    {formattedEstimatedTime()}
+                  </span>
+                </div>
+
+                <div className="space-y-4 border rounded-lg p-4 bg-slate-50/50">
+                  <FormField
+                    control={form.control}
+                    name="useBatching"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-white">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base flex items-center gap-2">
+                            <PauseCircle className="h-4 w-4 text-primary" />
+                            Pausas Periódicas (Lotes)
+                          </FormLabel>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {useBatching && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-down pl-1">
+                      <FormField
+                        control={form.control}
+                        name="batchSize"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Mensagens por grupo</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input type="number" {...field} />
+                                <Users className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground opacity-50" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField
+                          control={form.control}
+                          name="batchPauseMin"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Pausa Mín (s)</FormLabel>
+                              <FormControl>
+                                <Input type="number" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="batchPauseMax"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Pausa Máx (s)</FormLabel>
+                              <FormControl>
+                                <Input type="number" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Automatic Pause Section */}
+                <div className="space-y-4 border rounded-lg p-4 bg-slate-50/50">
+                  <FormField
+                    control={form.control}
+                    name="automaticPause"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-white">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base flex items-center gap-2">
+                            <CalendarClock className="h-4 w-4 text-primary" />
+                            Pausa Agendada
+                          </FormLabel>
+                          <FormDescription>
+                            Pausar em horário específico e retomar em data
+                            futura.
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {automaticPause && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-down pl-1">
+                      <FormField
+                        control={form.control}
+                        name="pauseTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Início da Pausa</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField
+                          control={form.control}
+                          name="resumeDate"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Dia Retorno</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant={'outline'}
+                                      className={cn(
+                                        'w-full pl-3 text-left font-normal text-xs px-2',
+                                        !field.value && 'text-muted-foreground',
+                                      )}
+                                    >
+                                      {field.value ? (
+                                        format(field.value, 'dd/MM/yy')
+                                      ) : (
+                                        <span>Data</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-3 w-3 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-auto p-0"
+                                  align="start"
+                                >
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) =>
+                                      date <
+                                      new Date(new Date().setHours(0, 0, 0, 0))
+                                    }
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="resumeTime"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Hora Retorno</FormLabel>
+                              <FormControl>
+                                <Input type="time" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4 border rounded-lg p-4 bg-slate-50/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sun className="h-5 w-5 text-orange-500" />
+                    <h3 className="font-semibold text-sm">Horário Comercial</h3>
+                  </div>
+
+                  {isOutsideBusinessHours() && (
+                    <div className="bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-md flex items-start gap-3 mb-4">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                      <p className="text-xs text-amber-800 font-medium">
+                        O início do disparo está fora do horário comercial (08h
+                        às 18h).
+                      </p>
+                    </div>
+                  )}
+
+                  <FormField
+                    control={form.control}
+                    name="businessHoursStrategy"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-1"
+                          >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="ignore" />
+                              </FormControl>
+                              <FormLabel className="font-normal text-sm">
+                                Extrapolar horário (Continuar enviando)
+                              </FormLabel>
+                            </FormItem>
+
+                            {businessHoursStrategy === 'ignore' && (
+                              <div className="ml-7 text-xs text-muted-foreground bg-red-50 p-2 rounded border border-red-100 text-red-600">
+                                Risco de bloqueios aumentado.
+                              </div>
+                            )}
+
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="pause" />
+                              </FormControl>
+                              <FormLabel className="font-normal text-sm">
+                                Agendar pausa diária
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {businessHoursStrategy === 'pause' && (
+                    <div className="flex gap-4 ml-7 animate-fade-in-down">
+                      <FormField
+                        control={form.control}
+                        name="businessHoursPauseTime"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel className="text-xs">Pausar às</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="businessHoursResumeTime"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel className="text-xs">
+                              Retomar às
+                            </FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="scheduleType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Início do Disparo</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-row gap-6"
+                          >
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="immediate" />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                Imediato
+                              </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="scheduled" />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                Agendar
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {scheduleType === 'scheduled' && (
+                    <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-down p-4 border rounded-md bg-muted/20">
+                      <FormField
+                        control={form.control}
+                        name="scheduledDate"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col flex-1">
+                            <FormLabel>Data</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant={'outline'}
+                                    className={cn(
+                                      'w-full pl-3 text-left font-normal',
+                                      !field.value && 'text-muted-foreground',
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, 'PPP', {
+                                        locale: ptBR,
+                                      })
+                                    ) : (
+                                      <span>Selecione uma data</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-auto p-0"
+                                align="start"
+                              >
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) =>
+                                    date <
+                                    new Date(new Date().setHours(0, 0, 0, 0))
+                                  }
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="scheduledTime"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col w-full sm:w-32">
+                            <FormLabel>Hora</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {conflict.hasConflict && (
+                  <Alert variant="destructive" className="animate-fade-in">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Conflito de Agendamento Detectado</AlertTitle>
+                    <AlertDescription className="mt-2 flex flex-col gap-2">
+                      <p>
+                        Esta campanha conflita com a campanha existente:{' '}
+                        <strong>{conflict.conflictingCampaignName}</strong>. É
+                        necessário um intervalo de pelo menos 1 hora entre
+                        disparos.
+                      </p>
+                      {conflict.suggestedTime && (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
+                          <span className="text-sm font-medium">
+                            Sugestão:{' '}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="w-fit h-8 px-2"
+                            onClick={applySuggestion}
+                          >
+                            Agendar para{' '}
+                            {format(conflict.suggestedTime, "dd/MM 'às' HH:mm")}
+                          </Button>
+                        </div>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isLoading || conflict.hasConflict}
+                  >
+                    {isLoading && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Próximo
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </>
+        ) : (
+          <CampaignConfirmationStep
+            schedule={schedule}
+            contacts={orderedContacts}
+            config={config!}
+            onBack={() => setStep('config')}
+            onConfirm={handleFinalConfirm}
+            isLoading={isLoading}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function Loader2({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn('animate-spin', className)}
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+  )
+}
