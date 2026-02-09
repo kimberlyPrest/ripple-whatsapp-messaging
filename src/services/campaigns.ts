@@ -1,0 +1,248 @@
+import { supabase } from '@/lib/supabase/client'
+import { Database } from '@/lib/supabase/types'
+import { contactsService } from './contacts'
+
+export interface Campaign {
+  id: string
+  user_id: string
+  name: string
+  status:
+    | 'scheduled'
+    | 'active'
+    | 'finished'
+    | 'pending'
+    | 'processing'
+    | 'paused'
+    | 'failed'
+    | 'canceled'
+  total_messages: number
+  sent_messages: number
+  execution_time: number
+  scheduled_at: string | null
+  started_at: string | null
+  finished_at: string | null
+  config: Record<string, any> | null
+  created_at: string
+}
+
+export interface CampaignMessage {
+  id: string
+  campaign_id: string
+  contact_id: string
+  status: string
+  error_message: string | null
+  sent_at: string | null
+  contacts: {
+    name: string
+    phone: string
+  } | null
+}
+
+export type CampaignInsert = Database['public']['Tables']['campaigns']['Insert']
+
+export const campaignsService = {
+  async getAll() {
+    const { data, error } = await supabase
+      .from('campaigns')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as Campaign[]
+  },
+
+  async getActiveAndScheduled() {
+    const { data, error } = await supabase
+      .from('campaigns')
+      .select(
+        'id, name, status, scheduled_at, started_at, total_messages, config',
+      )
+      .in('status', ['active', 'scheduled', 'processing', 'pending'])
+      .order('scheduled_at', { ascending: true })
+
+    if (error) throw error
+    return data as Partial<Campaign>[]
+  },
+
+  async getById(id: string) {
+    const { data, error } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    return data as Campaign
+  },
+
+  async create(campaign: CampaignInsert, contactIds: string[]) {
+    const { data: campaignData, error: campaignError } = await supabase
+      .from('campaigns')
+      .insert(campaign)
+      .select()
+      .single()
+
+    if (campaignError) throw campaignError
+
+    if (contactIds.length === 0) return campaignData as Campaign
+
+    const chunkSize = 100
+    const messages = contactIds.map((contactId) => ({
+      campaign_id: campaignData.id,
+      contact_id: contactId,
+      status: 'aguardando',
+    }))
+
+    for (let i = 0; i < messages.length; i += chunkSize) {
+      const chunk = messages.slice(i, i + chunkSize)
+      const { error: messagesError } = await supabase
+        .from('campaign_messages')
+        .insert(chunk)
+
+      if (messagesError) {
+        console.error('Error creating campaign messages chunk', messagesError)
+        throw messagesError
+      }
+    }
+
+    return campaignData as Campaign
+  },
+
+  async createDraft(
+    name: string,
+    contacts: { name: string; phone: string; message: string }[],
+  ) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    // 1. Create Contacts
+    const createdContacts = await contactsService.createBulk(contacts)
+    const contactIds = createdContacts.map((c) => c.id)
+
+    // 2. Create Campaign
+    const campaignData: CampaignInsert = {
+      name,
+      user_id: user.id,
+      status: 'pending',
+      total_messages: contactIds.length,
+      sent_messages: 0,
+    }
+
+    // 3. Link them
+    return await this.create(campaignData, contactIds)
+  },
+
+  async update(id: string, updates: Partial<CampaignInsert>) {
+    const { data, error } = await supabase
+      .from('campaigns')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as Campaign
+  },
+
+  async pause(id: string) {
+    const { error } = await supabase
+      .from('campaigns')
+      .update({ status: 'paused' })
+      .eq('id', id)
+
+    if (error) throw error
+  },
+
+  async resume(id: string) {
+    const { error } = await supabase
+      .from('campaigns')
+      .update({ status: 'active' })
+      .eq('id', id)
+
+    if (error) throw error
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase.from('campaigns').delete().eq('id', id)
+
+    if (error) throw error
+  },
+
+  async triggerQueue(campaignId: string) {
+    const { data, error } = await supabase.functions.invoke(
+      'process-campaign-queue',
+      {
+        body: { campaign_id: campaignId },
+      },
+    )
+
+    if (error) throw error
+    if (data && data.success === false) {
+      throw new Error(data.error || 'Erro desconhecido ao processar fila')
+    }
+    return data
+  },
+
+  async getMessages(campaignId: string) {
+    const { data, error } = await supabase
+      .from('campaign_messages')
+      .select('*, contacts(name, phone, message)')
+      .eq('campaign_id', campaignId)
+      .order('id', { ascending: true })
+
+    if (error) throw error
+    return data as unknown as CampaignMessage[]
+  },
+
+  async retryMessage(messageId: string) {
+    const { data: message, error } = await supabase
+      .from('campaign_messages')
+      .update({
+        status: 'aguardando',
+        error_message: null,
+        sent_at: null,
+      })
+      .eq('id', messageId)
+      .select('campaign_id')
+      .single()
+
+    if (error) throw error
+
+    if (message) {
+      const { error: campError } = await supabase
+        .from('campaigns')
+        .update({ status: 'processing', finished_at: null })
+        .eq('id', message.campaign_id)
+        .eq('status', 'finished')
+
+      if (campError) {
+        console.error(
+          'Failed to auto-resume finished campaign on retry',
+          campError,
+        )
+      }
+    }
+  },
+
+  async deleteMessage(messageId: string) {
+    const { error } = await supabase
+      .from('campaign_messages')
+      .delete()
+      .eq('id', messageId)
+
+    if (error) throw error
+  },
+
+  async deleteMessagesBulk(messageIds: string[]) {
+    if (messageIds.length === 0) return
+
+    const { error } = await supabase
+      .from('campaign_messages')
+      .delete()
+      .in('id', messageIds)
+
+    if (error) throw error
+  },
+}

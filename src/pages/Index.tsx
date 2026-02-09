@@ -1,22 +1,21 @@
-/* Home Page - Main Landing Page for Ripple */
-import { Hero } from '@/components/landing/Hero'
-import { Stats } from '@/components/landing/Stats'
-import { Comparison } from '@/components/landing/Comparison'
-import { Process } from '@/components/landing/Process'
-import { Features } from '@/components/landing/Features'
-import { FinalCTA } from '@/components/landing/FinalCTA'
+import { useAuth } from '@/hooks/use-auth'
+import { Loader2 } from 'lucide-react'
+import { Navigate } from 'react-router-dom'
 
-const Index = () => {
-  return (
-    <div className="flex flex-col w-full">
-      <Hero />
-      <Stats />
-      <Comparison />
-      <Process />
-      <Features />
-      <FinalCTA />
-    </div>
-  )
+export default function Index() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (user) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <Navigate to="/site" replace />
 }
-
-export default Index
