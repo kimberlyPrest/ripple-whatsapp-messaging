@@ -22,7 +22,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Save, User as UserIcon, Camera, Upload } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Loader2, Save, User as UserIcon, Camera, Upload, HelpCircle, Download, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { profileService } from "@/services/profile";
 import { Navigate } from "react-router-dom";
@@ -284,8 +292,66 @@ export default function Settings() {
                               value={field.value || ""}
                             />
                           </FormControl>
-                          <FormDescription>
-                            URL para onde as mensagens do WhatsApp serão enviadas.
+                          <FormDescription className="flex items-center justify-between">
+                            <span>URL para onde as mensagens do WhatsApp serão enviadas.</span>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="link" size="sm" className="h-auto p-0 text-xs flex items-center gap-1">
+                                  <HelpCircle className="w-3 h-3" />
+                                  Como configurar o n8n?
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle>Configuração do n8n</DialogTitle>
+                                  <DialogDescription>
+                                    Siga os passos abaixo para integrar o sistema com seu n8n.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                  <div className="flex items-start gap-3">
+                                    <div className="bg-primary/10 p-2 rounded-full text-primary mt-1">
+                                      <Download className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                      <p className="font-medium">1. Baixe o Workflow</p>
+                                      <p className="text-sm text-muted-foreground mb-2">
+                                        Faça o download do arquivo JSON pronto para importar.
+                                      </p>
+                                      <Button variant="outline" size="sm" asChild>
+                                        <a href="/n8n_workflow.json" download="n8n_workflow.json">
+                                          Download JSON
+                                        </a>
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-start gap-3">
+                                    <div className="bg-primary/10 p-2 rounded-full text-primary mt-1">
+                                      <Upload className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                      <p className="font-medium">2. Importe no n8n</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        No seu n8n, crie um novo workflow e use a opção "Import from File" para selecionar o JSON que você baixou.
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-start gap-3">
+                                    <div className="bg-primary/10 p-2 rounded-full text-primary mt-1">
+                                      <ExternalLink className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                      <p className="font-medium">3. Configure a Conexão</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        No nó chamado "Whatsapp", você precisará inserir a <span className="font-semibold text-foreground">URL</span> da sua API e sua <span className="font-semibold text-foreground">API Key</span> para que ele consiga enviar as mensagens.
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
