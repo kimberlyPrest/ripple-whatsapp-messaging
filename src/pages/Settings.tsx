@@ -22,7 +22,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Save, User as UserIcon, Camera, Upload } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Loader2, Save, User as UserIcon, Camera, Upload, HelpCircle, Download, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { profileService } from "@/services/profile";
 import { Navigate } from "react-router-dom";
