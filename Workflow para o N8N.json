@@ -1,5 +1,5 @@
 {
-  "name": "My workflow 3",
+  "name": "wORKFLOW DISPARO WHATSAPP",
   "nodes": [
     {
       "parameters": {
@@ -41,7 +41,7 @@
         -96
       ],
       "id": "09003fe7-aa45-417f-a171-27eec85a8ee3",
-      "name": "HTTP Request"
+      "name": "Whatsapp"
     }
   ],
   "pinData": {},
@@ -50,7 +50,7 @@
       "main": [
         [
           {
-            "node": "HTTP Request",
+            "node": "Whatsapp",
             "type": "main",
             "index": 0
           }
