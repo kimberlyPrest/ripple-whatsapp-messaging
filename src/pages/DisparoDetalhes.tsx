@@ -77,7 +77,12 @@ export default function DisparoDetalhes() {
           },
           () => {
             // Refresh messages when changes occur (optimally would update just the row, but refetching is safer for now)
-            campaignsService.getMessages(id).then(setMessages);
+            campaignsService
+              .getMessages(id)
+              .then(setMessages)
+              .catch((err) =>
+                console.error("Failed to refresh messages in realtime:", err),
+              );
           },
         )
         .subscribe();

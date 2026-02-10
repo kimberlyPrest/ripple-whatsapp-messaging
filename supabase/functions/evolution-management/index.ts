@@ -8,8 +8,12 @@ export const corsHeaders = {
     "authorization, x-client-info, x-supabase-client-platform, apikey, content-type",
 };
 
-const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL")?.replace(/\/$/, "");
-const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
+// Ensure environment variables are trimmed of whitespace
+const EVOLUTION_API_URL = Deno.env
+  .get("EVOLUTION_API_URL")
+  ?.replace(/\/$/, "")
+  ?.trim();
+const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY")?.trim();
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -82,7 +86,21 @@ Deno.serve(async (req: Request) => {
                 ? `${EVOLUTION_API_URL}/instance/fetchInstances`
                 : "";
 
+    if (!targetUrl) {
+      throw new Error(`Invalid action: ${action}`);
+    }
+
     console.log(`Action: ${action} | Target URL: ${targetUrl}`);
+
+    const fetchOptions: RequestInit = {
+      method:
+        action === "create" ? "POST" : action === "logout" ? "DELETE" : "GET",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: EVOLUTION_API_KEY,
+        "User-Agent": "Supabase-Edge-Function",
+      },
+    };
 
     if (action === "create") {
       const createBody = {
@@ -91,45 +109,45 @@ Deno.serve(async (req: Request) => {
         qrcode: true,
         integration: "WHATSAPP-BAILEYS",
       };
+      fetchOptions.body = JSON.stringify(createBody);
+    }
 
-      const response = await fetch(targetUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: EVOLUTION_API_KEY,
-        },
-        body: JSON.stringify(createBody),
-      });
+    let response = await fetch(targetUrl, fetchOptions);
 
-      result = await response.json();
+    if (action === "logout" && !response.ok) {
+      // Fallback or retry if needed, but usually delete is final
+      // Some versions use POST for logout
+      fetchOptions.method = "POST";
+      response = await fetch(targetUrl, fetchOptions);
+    }
 
-      if (!response.ok) {
-        throw new Error(
-          result.message || result.error || "Failed to create instance",
-        );
-      }
+    // Safely parse response
+    const responseText = await response.text();
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      result = { message: responseText || response.statusText };
+    }
 
+    if (!response.ok) {
+      console.error(
+        `Evolution API Error (${response.status}):`,
+        JSON.stringify(result),
+      );
+      throw new Error(
+        result.message ||
+          result.error ||
+          result.response?.message ||
+          "Failed to process request to Evolution API",
+      );
+    }
+
+    if (action === "create") {
       await serviceRoleClient
         .from("profiles")
         .update({ evolution_instance_id: instanceName })
         .eq("id", user.id);
-    } else if (action === "get-qr") {
-      const response = await fetch(targetUrl, {
-        method: "GET",
-        headers: {
-          apikey: EVOLUTION_API_KEY,
-        },
-      });
-      result = await response.json();
     } else if (action === "status") {
-      const response = await fetch(targetUrl, {
-        method: "GET",
-        headers: {
-          apikey: EVOLUTION_API_KEY,
-        },
-      });
-      result = await response.json();
-
       const status =
         result.instance?.state === "open" ? "connected" : "disconnected";
 
@@ -151,25 +169,6 @@ Deno.serve(async (req: Request) => {
         .update(updates)
         .eq("id", user.id);
     } else if (action === "logout") {
-      let response = await fetch(targetUrl, {
-        method: "DELETE",
-        headers: {
-          apikey: EVOLUTION_API_KEY,
-        },
-      });
-
-      if (!response.ok) {
-        // Fallback or retry if needed, but usually delete is final
-        response = await fetch(targetUrl, {
-          method: "POST", // Some versions use POST for logout
-          headers: {
-            apikey: EVOLUTION_API_KEY,
-          },
-        });
-      }
-
-      result = await response.json();
-
       await serviceRoleClient
         .from("profiles")
         .update({
@@ -179,14 +178,7 @@ Deno.serve(async (req: Request) => {
         .eq("id", user.id);
     } else if (action === "get-info") {
       // Fetch all instances and find the one matching the user
-      const response = await fetch(targetUrl, {
-        method: "GET",
-        headers: {
-          apikey: EVOLUTION_API_KEY,
-        },
-      });
-
-      const instances = await response.json();
+      const instances = result;
 
       let instanceInfo = null;
       if (Array.isArray(instances)) {
@@ -213,8 +205,6 @@ Deno.serve(async (req: Request) => {
       } else {
         result = null;
       }
-    } else {
-      throw new Error(`Invalid action: ${action}`);
     }
 
     return new Response(JSON.stringify(result), {
