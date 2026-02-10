@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { campaignsService } from "@/services/campaigns";
 import { Step1Import } from "@/components/campaigns/Step1Import";
 import { Step2Review } from "@/components/campaigns/Step2Review";
+import { StepIAConfig } from "@/components/campaigns/StepIAConfig";
 import {
   Step3Config,
   Step3ConfigValues,
@@ -44,10 +45,14 @@ export default function Upload() {
   };
 
   const handleStep2Next = () => {
-    setCurrentStep(3);
+    setCurrentStep(3); // Go to AI step
   };
 
-  const handleStep3Finish = async (values: Step3ConfigValues) => {
+  const handleIANext = () => {
+    setCurrentStep(4); // Go to config step
+  };
+
+  const handleStep4Finish = async (values: Step3ConfigValues) => {
     if (!campaignId) return;
     setIsProcessing(true);
     try {
@@ -73,15 +78,15 @@ export default function Upload() {
         max_interval: values.maxInterval,
         batch_config: values.useBatching
           ? {
-              enabled: true,
-              size: values.batchSize,
-              pause_min: values.batchPauseMin,
-              pause_max: values.batchPauseMax,
-            }
+            enabled: true,
+            size: values.batchSize,
+            pause_min: values.batchPauseMin,
+            pause_max: values.batchPauseMax,
+          }
           : { enabled: false },
         business_hours: {
           strategy: values.businessHoursStrategy,
-          pause_at: "18:00", // Default hardcoded for now or we could add inputs if needed
+          pause_at: "18:00",
           resume_at: "08:00",
         },
       };
@@ -129,7 +134,7 @@ export default function Upload() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl bg-[#f6f8f6] dark:bg-[#102216] min-h-[calc(100vh-4rem)]">
-      {/* Header - Only show for Step 1, Step 2 and 3 have their own headers or layout needs */}
+      {/* Header - Only show for Step 1 */}
       {currentStep === 1 && (
         <div className="mb-8 space-y-1">
           <span className="text-[#13ec5b] font-medium text-sm tracking-wide uppercase">
@@ -139,7 +144,7 @@ export default function Upload() {
             Importar Lista de Contatos
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-lg">
-            Passo 1 de 3: Carregue sua base de clientes para começar.
+            Passo 1 de 4: Carregue sua base de clientes para começar.
           </p>
         </div>
       )}
@@ -159,10 +164,18 @@ export default function Upload() {
         )}
 
         {currentStep === 3 && campaignId && (
-          <Step3Config
+          <StepIAConfig
             campaignId={campaignId}
             onBack={() => setCurrentStep(2)}
-            onFinish={handleStep3Finish}
+            onNext={handleIANext}
+          />
+        )}
+
+        {currentStep === 4 && campaignId && (
+          <Step3Config
+            campaignId={campaignId}
+            onBack={() => setCurrentStep(3)}
+            onFinish={handleStep4Finish}
           />
         )}
       </div>

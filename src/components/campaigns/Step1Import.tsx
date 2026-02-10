@@ -198,21 +198,27 @@ export function Step1Import({ onNext, isProcessing }: Step1ImportProps) {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center gap-2 text-slate-600 font-semibold text-sm uppercase tracking-wider">
             <CodeIcon className="h-4 w-4" />
-            <span>Formato obrigatório da planilha</span>
+            <span>Formato da planilha</span>
           </div>
           <Card className="bg-slate-50/50 border shadow-none">
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b-slate-200 hover:bg-transparent">
-                    <TableHead className="text-xs font-bold text-slate-500 uppercase h-10 bg-slate-100/50">
-                      Nome
+                    <TableHead className="text-xs font-bold text-green-600 uppercase h-10 bg-green-50/50">
+                      Nome *
                     </TableHead>
-                    <TableHead className="text-xs font-bold text-slate-500 uppercase h-10 bg-slate-100/50">
-                      Telefone do Cliente
+                    <TableHead className="text-xs font-bold text-green-600 uppercase h-10 bg-green-50/50">
+                      Telefone *
                     </TableHead>
                     <TableHead className="text-xs font-bold text-slate-500 uppercase h-10 bg-slate-100/50">
                       Mensagem
+                    </TableHead>
+                    <TableHead className="text-xs font-bold text-blue-500 uppercase h-10 bg-blue-50/50">
+                      Produto
+                    </TableHead>
+                    <TableHead className="text-xs font-bold text-blue-500 uppercase h-10 bg-blue-50/50">
+                      Cidade
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -224,8 +230,14 @@ export function Step1Import({ onNext, isProcessing }: Step1ImportProps) {
                     <TableCell className="py-3 text-sm text-slate-600">
                       5511999999999
                     </TableCell>
-                    <TableCell className="py-3 text-sm text-slate-600">
-                      Olá, tudo bem?
+                    <TableCell className="py-3 text-sm text-slate-400 italic">
+                      opcional
+                    </TableCell>
+                    <TableCell className="py-3 text-sm text-blue-500">
+                      Tênis Nike
+                    </TableCell>
+                    <TableCell className="py-3 text-sm text-blue-500">
+                      São Paulo
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -233,8 +245,8 @@ export function Step1Import({ onNext, isProcessing }: Step1ImportProps) {
             </CardContent>
           </Card>
           <p className="text-xs text-slate-400">
-            Certifique-se de que os cabeçalhos das colunas correspondam
-            exatamente ao exemplo acima.
+            <span className="text-green-600 font-medium">*Obrigatórias:</span> Nome e Telefone.
+            <span className="text-blue-500 font-medium ml-1">Colunas extras</span> (Produto, Cidade, etc.) serão usadas pela IA para personalizar mensagens.
           </p>
         </div>
 

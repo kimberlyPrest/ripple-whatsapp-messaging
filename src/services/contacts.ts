@@ -27,7 +27,7 @@ export const contactsService = {
   },
 
   async createBulk(
-    contacts: { name: string; phone: string; message: string }[],
+    contacts: { name: string; phone: string; message?: string; metadata?: any }[],
   ) {
     const {
       data: { user },
@@ -38,7 +38,8 @@ export const contactsService = {
     const contactsWithUser = contacts.map((contact) => ({
       name: contact.name,
       phone: contact.phone,
-      message: contact.message,
+      message: contact.message || "",
+      metadata: contact.metadata || {},
       user_id: user.id,
       status: "pendente",
     }));

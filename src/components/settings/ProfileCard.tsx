@@ -13,6 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -29,6 +30,7 @@ import { profileService, ProfileData } from "@/services/profile";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  openai_api_key: z.string().optional(),
 });
 
 const passwordSchema = z
@@ -59,7 +61,7 @@ export function ProfileCard({
 
   const form = useForm({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: profile.name || "" },
+    defaultValues: { name: profile.name || "", openai_api_key: profile.openai_api_key || "" },
   });
 
   const passwordForm = useForm({
@@ -87,6 +89,7 @@ export function ProfileCard({
 
       await profileService.update(user.id, {
         name: data.name,
+        openai_api_key: data.openai_api_key,
         ...(avatarUrl && { avatar_url: avatarUrl }),
       });
 
@@ -185,6 +188,34 @@ export function ProfileCard({
                       <Lock className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
                     </div>
                   </div>
+                </div>
+
+                <div className="grid gap-6">
+                  <FormField
+                    control={form.control}
+                    name="openai_api_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                          OpenAI API Key
+                          <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded uppercase">AI Power</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            className="bg-gray-50/50"
+                            placeholder="sk-..."
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-[10px]">
+                          Usada para gerar mensagens personalizadas com IA. Suas chaves são criptografadas e seguras.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 <div className="border rounded-xl p-4 bg-gray-50/50 flex items-center justify-between gap-4">

@@ -10,6 +10,7 @@ export type ProfileData = {
   evolution_instance_id: string | null;
   whatsapp_status: string | null;
   whatsapp_connected_at?: string | null;
+  openai_api_key: string | null;
   created_at?: string;
 };
 
@@ -35,6 +36,7 @@ export const profileService = {
       evolution_instance_id?: string | null;
       whatsapp_status?: string | null;
       whatsapp_connected_at?: string | null;
+      openai_api_key?: string | null;
     },
   ) {
     const { error } = await supabase

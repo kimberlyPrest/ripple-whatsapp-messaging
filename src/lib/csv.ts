@@ -1,7 +1,8 @@
 export interface ParsedContact {
   name: string;
   phone: string;
-  message: string;
+  message?: string;
+  metadata?: Record<string, string>;
 }
 
 export const parseCSV = async (file: File): Promise<ParsedContact[]> => {
@@ -30,10 +31,10 @@ export const parseCSV = async (file: File): Promise<ParsedContact[]> => {
           (h) => h === "mensagem" || h === "message",
         );
 
-        if (nameIndex === -1 || phoneIndex === -1 || messageIndex === -1) {
+        if (nameIndex === -1 || phoneIndex === -1) {
           reject(
             new Error(
-              "Colunas obrigatórias não encontradas. O arquivo deve conter: Nome, Telefone, Mensagem",
+              "Colunas obrigatórias não encontradas. O arquivo deve conter pelo menos: Nome e Telefone",
             ),
           );
           return;
@@ -63,11 +64,19 @@ export const parseCSV = async (file: File): Promise<ParsedContact[]> => {
           }
           row.push(currentValue.trim().replace(/^"|"$/g, ""));
 
-          if (row.length > Math.max(nameIndex, phoneIndex, messageIndex)) {
+          if (row.length > Math.max(nameIndex, phoneIndex)) {
+            const metadata: Record<string, string> = {};
+            headers.forEach((header, idx) => {
+              if (row[idx] !== undefined) {
+                metadata[header] = row[idx];
+              }
+            });
+
             contacts.push({
               name: row[nameIndex],
               phone: row[phoneIndex],
-              message: row[messageIndex],
+              message: messageIndex !== -1 ? row[messageIndex] : undefined,
+              metadata,
             });
           }
         }

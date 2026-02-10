@@ -7,14 +7,14 @@ export interface Campaign {
   user_id: string;
   name: string;
   status:
-    | "scheduled"
-    | "active"
-    | "finished"
-    | "pending"
-    | "processing"
-    | "paused"
-    | "failed"
-    | "canceled";
+  | "scheduled"
+  | "active"
+  | "finished"
+  | "pending"
+  | "processing"
+  | "paused"
+  | "failed"
+  | "canceled";
   total_messages: number;
   sent_messages: number;
   execution_time: number;
@@ -111,7 +111,7 @@ export const campaignsService = {
 
   async createDraft(
     name: string,
-    contacts: { name: string; phone: string; message: string }[],
+    contacts: { name: string; phone: string; message?: string; metadata?: any }[],
   ) {
     const {
       data: { user },
