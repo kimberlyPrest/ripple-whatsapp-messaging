@@ -204,10 +204,15 @@ export const campaignsService = {
       throw new Error("Unauthorized: No active session found.");
     }
 
+    // Invoke the edge function with explicit Authorization header
+    // This resolves potential 401 errors by ensuring the latest token is sent
     const { data, error } = await supabase.functions.invoke(
       "generate-ai-messages",
       {
         body: { campaign_id: campaignId, prompt_base: promptBase },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       },
     );
 

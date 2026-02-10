@@ -12,15 +12,26 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // 1. Validate and extract Authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("Missing Authorization header");
+    }
+
+    // 2. Create Supabase client with user context
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: req.headers.get("Authorization")! } },
+      global: { headers: { Authorization: authHeader } },
     });
 
+    // 3. Verify user authentication
     const {
       data: { user },
       error: authError,
     } = await supabaseClient.auth.getUser();
-    if (authError || !user) throw new Error("Unauthorized");
+
+    if (authError || !user) {
+      throw new Error("Unauthorized");
+    }
 
     const { campaign_id, prompt_base } = await req.json();
     if (!campaign_id || !prompt_base) throw new Error("Missing parameters");
@@ -28,7 +39,7 @@ Deno.serve(async (req: Request) => {
     // Initialize admin client to get API key and update contacts
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 1. Get user OpenAI key
+    // 4. Get user OpenAI key
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("openai_api_key")
@@ -39,7 +50,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("OpenAI API Key não encontrada nas configurações.");
     }
 
-    // 2. Fetch contacts for this campaign
+    // 5. Fetch contacts for this campaign
     const { data: campaignMessages, error: cmError } = await supabaseAdmin
       .from("campaign_messages")
       .select("contact_id, contacts(*)")
@@ -55,10 +66,9 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Generating AI messages for ${contacts.length} contacts...`);
 
-    // 3. Process each contact with OpenAI
+    // 6. Process each contact with OpenAI
     // We'll do them in parallel with a limit or sequentially to avoid time timeouts.
     // Given Edge Functions have limits, we'll do them in small batches or one by one.
-    // For large campaigns, this should be a background task, but for now we do it here.
 
     const results = [];
     const BATCH_SIZE = 5; // Low batch size for stability in dynamic generation
@@ -136,8 +146,15 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error: any) {
     console.error("AI Generation error:", error);
+    // Return 401 for auth errors to help frontend handle it better
+    const status =
+      error.message === "Unauthorized" ||
+      error.message === "Missing Authorization header"
+        ? 401
+        : 400;
+
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
+      status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
