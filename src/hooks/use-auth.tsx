@@ -20,6 +20,9 @@ interface AuthContextType {
     password: string,
   ) => Promise<{ error: AuthError | null; data: any }>;
   signOut: () => Promise<{ error: AuthError | null }>;
+  updatePassword: (
+    password: string,
+  ) => Promise<{ error: AuthError | null; data: any }>;
   loading: boolean;
 }
 
@@ -94,12 +97,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updatePassword = async (password: string) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser({ password });
+      return { data, error };
+    } catch (error) {
+      return { data: null, error: error as AuthError };
+    }
+  };
+
   const value = {
     user,
     session,
     signUp,
     signIn,
     signOut,
+    updatePassword,
     loading,
   };
 
