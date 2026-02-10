@@ -1,132 +1,177 @@
+import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { Button } from "@/components/ui/button";
-import { PlayCircle, ArrowRight, MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  BarChart,
+  Users,
+  Briefcase,
+  LayoutDashboard,
+  FolderKanban,
+  CheckSquare,
+  MessageSquare,
+  Settings,
+  Plus,
+  CheckCircle2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function Hero() {
   return (
-    <section className="relative pt-32 pb-16 lg:pt-40 lg:pb-24 overflow-hidden">
-      <div className="container mx-auto px-4 max-w-7xl">
-        <div className="flex flex-col items-center text-center max-w-4xl mx-auto mb-16">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#13ec5b]/10 text-[#0da540] font-bold text-xs uppercase tracking-wide mb-6 animate-fade-in-up">
-            <span className="w-2 h-2 rounded-full bg-[#13ec5b]"></span>
-            Tecnologia Anti-Bloqueio 2.0
+    <section className="bg-slate-50 dark:bg-zinc-900 overflow-hidden">
+      <ContainerScroll
+        titleComponent={
+          <>
+            <h1 className="text-4xl font-semibold text-slate-900 dark:text-white">
+              Gerencie seus projetos com <br />
+              <span className="text-4xl md:text-[6rem] font-bold mt-1 leading-none text-[#13ec5b]">
+                Interface Moderna
+              </span>
+            </h1>
+          </>
+        }
+      >
+        {/* Browser Frame UI */}
+        <div className="w-full h-full rounded-xl border border-slate-200 shadow-2xl bg-white flex flex-col overflow-hidden">
+          {/* Top Bar with Traffic Lights */}
+          <div className="h-10 border-b border-slate-100 bg-slate-50/50 flex items-center px-4 gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
           </div>
 
-          {/* Headline */}
-          <h1 className="font-manrope font-extrabold text-4xl md:text-5xl lg:text-6xl text-slate-900 leading-tight mb-6 animate-fade-in-up delay-100">
-            Transforme suas listas em{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0da540] to-[#13ec5b]">
-              resultados reais
-            </span>{" "}
-            no WhatsApp
-          </h1>
-
-          {/* Subheadline */}
-          <p className="font-noto text-lg md:text-xl text-slate-600 mb-8 max-w-2xl leading-relaxed animate-fade-in-up delay-200">
-            A plataforma mais segura para envios em massa. Automatize sua
-            comunicação com humanização real e proteja seu número contra
-            bloqueios.
-          </p>
-
-          {/* Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 animate-fade-in-up delay-300">
-            <Button
-              asChild
-              size="lg"
-              className="w-full sm:w-auto bg-[#13ec5b] hover:bg-[#0da540] text-slate-900 font-bold h-12 px-8 rounded-lg shadow-xl shadow-[#13ec5b]/20 transition-transform hover:-translate-y-1"
-            >
-              <Link to="/signup">
-                Começar Agora - Grátis
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto h-12 px-8 rounded-lg border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
-            >
-              <a href="#">
-                <PlayCircle className="mr-2 h-5 w-5 text-[#13ec5b]" />
-                Ver Demo
-              </a>
-            </Button>
-          </div>
-        </div>
-
-        {/* Browser Mockup */}
-        <div className="relative mx-auto max-w-5xl animate-fade-in-up delay-500">
-          <div className="rounded-xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
-            {/* Browser Header */}
-            <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex items-center gap-2">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-green-400" />
+          {/* Dashboard Layout */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Sidebar (Hidden on mobile) */}
+            <div className="hidden md:flex w-64 border-r border-slate-100 bg-white flex-col p-4 gap-2">
+              <div className="flex items-center gap-2 px-2 mb-6">
+                <div className="w-8 h-8 rounded bg-[#13ec5b] flex items-center justify-center text-white font-bold">
+                  R
+                </div>
+                <span className="font-bold text-slate-900">Ripple</span>
               </div>
-              <div className="flex-1 mx-4">
-                <div className="bg-white border border-slate-200 rounded-md h-6 w-full max-w-md mx-auto opacity-50" />
-              </div>
+
+              <SidebarItem
+                icon={<LayoutDashboard size={20} />}
+                label="Dashboard"
+                active
+              />
+              <SidebarItem icon={<FolderKanban size={20} />} label="Projects" />
+              <SidebarItem icon={<CheckSquare size={20} />} label="Tasks" />
+              <SidebarItem
+                icon={<MessageSquare size={20} />}
+                label="Messages"
+              />
+              <SidebarItem icon={<Settings size={20} />} label="Settings" />
             </div>
 
-            {/* Browser Content (Dashboard Mockup) */}
-            <div className="flex h-[400px] md:h-[500px] bg-[#f8fafc]">
-              {/* Sidebar */}
-              <div className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col p-4 gap-4">
-                <div className="h-8 w-32 bg-slate-100 rounded mb-4" />
-                <div className="space-y-2">
-                  <div className="h-10 w-full bg-[#13ec5b]/10 rounded border-l-4 border-[#13ec5b]" />
-                  <div className="h-10 w-full bg-slate-50 rounded" />
-                  <div className="h-10 w-full bg-slate-50 rounded" />
-                </div>
+            {/* Main Content */}
+            <div className="flex-1 bg-slate-50 p-6 overflow-y-auto">
+              {/* Header */}
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-800">Dashboard</h2>
+                <Button className="bg-[#13ec5b] hover:bg-[#0da540] text-white">
+                  <Plus className="mr-2 h-4 w-4" /> Create New
+                </Button>
               </div>
 
-              {/* Main Content */}
-              <div className="flex-1 p-6 overflow-hidden">
-                <div className="flex justify-between items-center mb-8">
-                  <div className="h-8 w-48 bg-slate-200 rounded" />
-                  <div className="h-10 w-32 bg-[#13ec5b] rounded" />
-                </div>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <StatCard
+                  icon={<Briefcase className="text-blue-500" />}
+                  label="Total Projects"
+                  value="12"
+                />
+                <StatCard
+                  icon={<CheckCircle2 className="text-[#13ec5b]" />}
+                  label="Active Tasks"
+                  value="34"
+                />
+                <StatCard
+                  icon={<Users className="text-purple-500" />}
+                  label="Team Members"
+                  value="8"
+                />
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  {[...Array(3)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="bg-white p-4 rounded-lg shadow-sm border border-slate-100"
-                    >
-                      <div className="h-10 w-10 rounded-full bg-slate-100 mb-3" />
-                      <div className="h-4 w-20 bg-slate-100 rounded mb-2" />
-                      <div className="h-6 w-12 bg-slate-200 rounded" />
-                    </div>
-                  ))}
+              {/* Data List Section */}
+              <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-slate-100 font-medium text-slate-500 text-sm">
+                  Recent Activity
                 </div>
-
-                <div className="bg-white rounded-lg shadow-sm border border-slate-100 h-64 p-4">
-                  <div className="flex gap-4 mb-4">
-                    <div className="h-8 w-24 bg-slate-100 rounded" />
-                    <div className="h-8 w-24 bg-slate-100 rounded" />
-                  </div>
-                  <div className="space-y-3">
-                    {[...Array(5)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-12 w-full bg-slate-50 rounded flex items-center px-4 justify-between"
-                      >
-                        <div className="flex gap-3">
-                          <div className="h-4 w-4 bg-slate-200 rounded" />
-                          <div className="h-4 w-32 bg-slate-200 rounded" />
-                        </div>
-                        <div className="h-4 w-16 bg-[#13ec5b]/20 rounded" />
-                      </div>
-                    ))}
-                  </div>
+                <div className="divide-y divide-slate-100">
+                  <ListItem label="Project Alpha" status="In Progress" />
+                  <ListItem label="Marketing Campaign" status="Review" />
+                  <ListItem label="Website Redesign" status="Planning" />
+                  <ListItem label="Mobile App" status="Development" />
+                  <ListItem label="Client Meeting" status="Done" />
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </ContainerScroll>
     </section>
+  );
+}
+
+function SidebarItem({
+  icon,
+  label,
+  active = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer",
+        active
+          ? "bg-[#13ec5b]/10 text-[#13ec5b]"
+          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+      )}
+    >
+      {icon}
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
+      <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center">
+        {icon}
+      </div>
+      <div>
+        <p className="text-sm text-slate-500">{label}</p>
+        <p className="text-2xl font-bold text-slate-900">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function ListItem({ label, status }: { label: string; status: string }) {
+  return (
+    <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+      <div className="flex items-center gap-3">
+        <div className="w-5 h-5 rounded border border-slate-300 flex items-center justify-center">
+          {/* Checkbox Placeholder */}
+        </div>
+        <span className="text-sm font-medium text-slate-700">{label}</span>
+      </div>
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#13ec5b]/20 text-green-700">
+        {status}
+      </span>
+    </div>
   );
 }
