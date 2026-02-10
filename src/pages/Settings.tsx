@@ -30,7 +30,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, Save, User as UserIcon, Camera, Upload, HelpCircle, Download, ExternalLink } from "lucide-react";
+import {
+  Loader2,
+  Save,
+  User as UserIcon,
+  Camera,
+  Upload,
+  HelpCircle,
+  Download,
+  ExternalLink,
+} from "lucide-react";
 import { toast } from "sonner";
 import { profileService } from "@/services/profile";
 import { Navigate } from "react-router-dom";
@@ -40,7 +49,11 @@ const profileFormSchema = z.object({
     message: "O nome deve ter pelo menos 2 caracteres.",
   }),
   email: z.string().email(),
-  webhook_url: z.string().url("A URL do webhook deve ser válida.").nullable().or(z.literal("")),
+  webhook_url: z
+    .string()
+    .url("A URL do webhook deve ser válida.")
+    .nullable()
+    .or(z.literal("")),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -161,12 +174,12 @@ export default function Settings() {
 
   const userInitials = form.getValues("name")
     ? form
-      .getValues("name")
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+        .getValues("name")
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
     : user.email?.substring(0, 2).toUpperCase();
 
   return (
@@ -289,6 +302,7 @@ export default function Settings() {
                       name="webhook_url"
                       render={({ field }) => (
                         <FormItem>
+<<<<<<< HEAD
                           <div className="flex items-center justify-between">
                             <FormLabel>URL do Webhook</FormLabel>
                             <Dialog>
@@ -368,12 +382,23 @@ export default function Settings() {
                           <FormControl>
                             <Input
                               placeholder="https://seu-n8n-webhook.com/..."
+=======
+                          <FormLabel>URL do Webhook</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://seu-webhook.com"
+>>>>>>> 54f985983c3511ba17d7e49911d0d5d03adf4283
                               {...field}
                               value={field.value || ""}
                             />
                           </FormControl>
                           <FormDescription>
+<<<<<<< HEAD
                             Cole aqui a URL do Webhook gerada pelo seu n8n para receber as notificações.
+=======
+                            URL para onde as mensagens do WhatsApp serão
+                            enviadas.
+>>>>>>> 54f985983c3511ba17d7e49911d0d5d03adf4283
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
