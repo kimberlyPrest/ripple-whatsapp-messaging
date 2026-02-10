@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase/client";
 import { campaignsService } from "@/services/campaigns";
 
 interface StepIAConfigProps {
@@ -80,26 +79,40 @@ export function StepIAConfig({
 
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke(
-        "generate-ai-messages",
-        {
-          body: { campaign_id: campaignId, prompt_base: prompt },
-        },
+      const data = await campaignsService.generateAiMessages(
+        campaignId,
+        prompt,
       );
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
 
       toast.success(
         `${data.count} mensagens personalizadas foram geradas com sucesso!`,
       );
       onNext();
     } catch (error: any) {
-      console.error(error);
-      toast.error("Erro ao gerar mensagens", {
-        description:
-          error.message || "Verifique sua chave de AI nas configurações.",
-      });
+      console.error("AI Generation Error:", error);
+
+      const isAuthError =
+        error?.status === 401 ||
+        error?.code === 401 ||
+        error?.message?.includes("Unauthorized") ||
+        error?.message?.includes("JWT");
+
+      if (isAuthError) {
+        toast.error("Sessão expirada", {
+          description:
+            "Por favor, recarregue a página ou faça login novamente para continuar.",
+          action: {
+            label: "Recarregar",
+            onClick: () => window.location.reload(),
+          },
+        });
+      } else {
+        toast.error("Erro ao gerar mensagens", {
+          description:
+            error.message ||
+            "Verifique sua chave de AI nas configurações ou tente novamente.",
+        });
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -136,6 +149,7 @@ export function StepIAConfig({
               className="min-h-[150px] resize-none text-base leading-relaxed p-4 focus-visible:ring-primary/20"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              disabled={isGenerating}
             />
 
             <div className="space-y-2">
@@ -148,7 +162,11 @@ export function StepIAConfig({
                     key={field}
                     variant="secondary"
                     className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-md lowercase cursor-pointer transition-colors border border-slate-200"
-                    onClick={() => setPrompt((prev) => prev + ` {{${field}}}`)}
+                    onClick={() => {
+                      if (!isGenerating) {
+                        setPrompt((prev) => prev + ` {{${field}}}`);
+                      }
+                    }}
                   >
                     {field}
                   </Badge>

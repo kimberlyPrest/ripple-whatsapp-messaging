@@ -193,6 +193,30 @@ export const campaignsService = {
     return data;
   },
 
+  async generateAiMessages(campaignId: string, promptBase: string) {
+    // Refresh session to ensure we have a valid JWT before invoking
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      throw new Error("Unauthorized: No active session found.");
+    }
+
+    const { data, error } = await supabase.functions.invoke(
+      "generate-ai-messages",
+      {
+        body: { campaign_id: campaignId, prompt_base: promptBase },
+      },
+    );
+
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+
+    return data;
+  },
+
   async getMessages(campaignId: string) {
     const { data, error } = await supabase
       .from("campaign_messages")
