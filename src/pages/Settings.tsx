@@ -187,7 +187,7 @@ export default function Settings() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
         <p className="text-muted-foreground">
-          Gerencie suas informações de perfil e foto.
+          Gerencie suas informações de perfil e configurações de integração.
         </p>
       </div>
 
@@ -209,7 +209,7 @@ export default function Settings() {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-8"
               >
-                <div className="flex flex-col sm:flex-row gap-8 items-start">
+                <div className="flex flex-col sm:flex-row gap-8 items-start border-b pb-8">
                   <div className="flex flex-col items-center space-y-4">
                     <div className="relative group">
                       <Avatar
@@ -291,23 +291,114 @@ export default function Settings() {
                         </FormItem>
                       )}
                     />
+                  </div>
+                </div>
 
+                <div className="pt-4">
+                  <h3 className="text-lg font-medium mb-4">Configurações de Webhook</h3>
+                  <div className="space-y-6">
                     <FormField
                       control={form.control}
                       name="webhook_url"
                       render={({ field }) => (
                         <FormItem>
+<<<<<<< HEAD
+                          <div className="flex items-center justify-between">
+                            <FormLabel>URL do Webhook</FormLabel>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 flex items-center gap-2"
+                                >
+                                  <HelpCircle className="w-4 h-4" />
+                                  Como configurar o n8n?
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle>Configuração do n8n</DialogTitle>
+                                  <DialogDescription>
+                                    Siga os passos abaixo para integrar o sistema com seu n8n.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-6 py-4">
+                                  <div className="flex items-start gap-3">
+                                    <div className="bg-primary/10 p-2 rounded-full text-primary mt-1 shrink-0">
+                                      <Download className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-base">1. Baixe o Workflow</p>
+                                      <p className="text-sm text-muted-foreground mb-3">
+                                        Faça o download do arquivo JSON pronto para importar no seu n8n.
+                                      </p>
+                                      <Button variant="default" size="sm" asChild className="w-full sm:w-auto">
+                                        <a href="/n8n_workflow.json" download="n8n_workflow.json" className="flex items-center justify-center gap-2">
+                                          <Download className="w-4 h-4" />
+                                          Download JSON para n8n
+                                        </a>
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-start gap-3 border-t pt-4">
+                                    <div className="bg-primary/10 p-2 rounded-full text-primary mt-1 shrink-0">
+                                      <Upload className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-base">2. Importe no n8n</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        No seu painel n8n, crie um novo workflow e use a opção <span className="font-medium text-foreground italic">"Import from File"</span> no menu para selecionar o JSON que você baixou.
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-start gap-3 border-t pt-4">
+                                    <div className="bg-primary/10 p-2 rounded-full text-primary mt-1 shrink-0">
+                                      <ExternalLink className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-base">3. Configure a Conexão</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        Abra o nó chamado <span className="text-foreground font-bold font-mono">"Whatsapp"</span>. Lá você precisará inserir:
+                                      </p>
+                                      <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1">
+                                        <li>Sua <span className="font-semibold">URL da API</span></li>
+                                        <li>Sua <span className="font-semibold">API Key</span> (do Evolution API)</li>
+                                      </ul>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-4 p-3 bg-muted rounded-lg text-xs text-muted-foreground">
+                                    <p className="font-medium mb-1">Dica:</p>
+                                    Após importar e configurar, não esqueça de copiar a <span className="font-bold underline italic">Webhook URL</span> gerada no gatilho do n8n e colá-la no campo ao lado.
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                          <FormControl>
+                            <Input
+                              placeholder="https://seu-n8n-webhook.com/..."
+=======
                           <FormLabel>URL do Webhook</FormLabel>
                           <FormControl>
                             <Input
                               placeholder="https://seu-webhook.com"
+>>>>>>> 54f985983c3511ba17d7e49911d0d5d03adf4283
                               {...field}
                               value={field.value || ""}
                             />
                           </FormControl>
                           <FormDescription>
+<<<<<<< HEAD
+                            Cole aqui a URL do Webhook gerada pelo seu n8n para receber as notificações.
+=======
                             URL para onde as mensagens do WhatsApp serão
                             enviadas.
+>>>>>>> 54f985983c3511ba17d7e49911d0d5d03adf4283
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -316,8 +407,8 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-4 border-t">
-                  <Button type="submit" disabled={isSaving}>
+                <div className="flex justify-end pt-6 border-t">
+                  <Button type="submit" disabled={isSaving} className="min-w-[150px]">
                     {isSaving ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
