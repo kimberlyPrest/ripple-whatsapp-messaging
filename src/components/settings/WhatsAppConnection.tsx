@@ -160,15 +160,11 @@ export function WhatsAppConnection({
           <div className="relative">
             <Avatar className="w-24 h-24 border-4 border-white shadow-md">
               <AvatarImage
-                src={
-                  instanceInfo?.profilePictureUrl ||
-                  profile.avatar_url ||
-                  undefined
-                }
+                src={instanceInfo?.profilePictureUrl}
                 className="object-cover"
               />
               <AvatarFallback className="text-2xl bg-green-100 text-green-700">
-                {profile.name?.slice(0, 2).toUpperCase() || "WA"}
+                {instanceInfo?.profileName?.slice(0, 2).toUpperCase() || "WA"}
               </AvatarFallback>
             </Avatar>
             <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-sm">
@@ -183,8 +179,14 @@ export function WhatsAppConnection({
               STATUS: CONECTADO
             </Badge>
             <h3 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
-              {formatPhoneNumber(instanceInfo?.owner)}
+              {instanceInfo?.profileName ||
+                formatPhoneNumber(instanceInfo?.owner)}
             </h3>
+            {instanceInfo?.profileName && (
+              <p className="text-muted-foreground text-sm font-medium">
+                {formatPhoneNumber(instanceInfo?.owner)}
+              </p>
+            )}
             {profile.whatsapp_connected_at && (
               <p className="text-muted-foreground text-sm">
                 Conectado em{" "}

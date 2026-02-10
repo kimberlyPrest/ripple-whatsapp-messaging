@@ -198,14 +198,17 @@ Deno.serve(async (req: Request) => {
       }
 
       if (instanceInfo) {
-        // Normalize structure
+        // Normalize structure and prioritize pushName
         result = {
           profilePictureUrl:
             instanceInfo.profilePictureUrl ||
             instanceInfo.instance?.profilePictureUrl,
           owner: instanceInfo.owner || instanceInfo.instance?.owner,
           profileName:
-            instanceInfo.profileName || instanceInfo.instance?.profileName,
+            instanceInfo.pushName ||
+            instanceInfo.instance?.pushName ||
+            instanceInfo.profileName ||
+            instanceInfo.instance?.profileName,
         };
       } else {
         result = null;
