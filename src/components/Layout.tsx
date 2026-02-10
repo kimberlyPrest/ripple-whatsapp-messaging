@@ -23,6 +23,11 @@ export default function Layout() {
   const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Handle Landing Page specifically (bypass both layouts to avoid duplicated headers)
+  if (location.pathname === "/site") {
+    return <Outlet />;
+  }
+
   // Authenticated Layout (Sidebar)
   if (user) {
     return (

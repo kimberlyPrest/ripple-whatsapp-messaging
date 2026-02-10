@@ -21,7 +21,7 @@ export function Navbar() {
       <div className="flex h-8 w-8 items-center justify-center rounded bg-[#13ec5b] text-white font-bold text-lg font-manrope">
         R
       </div>
-      <span className="font-manrope font-bold text-xl text-slate-900">
+      <span className="font-bold text-lg tracking-tight text-foreground">
         Ripple
       </span>
     </div>
