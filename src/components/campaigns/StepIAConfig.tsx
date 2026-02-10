@@ -7,6 +7,7 @@ import {
   Info,
   Key,
   MessageSquare,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { campaignsService } from "@/services/campaigns";
+import { Progress } from "@/components/ui/progress";
 
 interface StepIAConfigProps {
   campaignId: string;
@@ -47,7 +49,7 @@ export function StepIAConfig({
           const contact = messages[0].contacts;
           // Extract keys from metadata
           const metadata = contact.metadata || {};
-          // Filter out name and phone if they somehow exist in metadata (though they shouldn't with new CSV parser)
+
           const metadataKeys = Object.keys(metadata).filter(
             (key) =>
               ![
@@ -79,15 +81,34 @@ export function StepIAConfig({
 
     setIsGenerating(true);
     try {
+      // Optimistic user feedback
+      toast.info("Iniciando geração de mensagens...", {
+        description:
+          "Isso pode levar alguns minutos dependendo da quantidade de contatos.",
+      });
+
       const data = await campaignsService.generateAiMessages(
         campaignId,
         prompt,
       );
 
-      toast.success(
-        `${data.count} mensagens personalizadas foram geradas com sucesso!`,
-      );
-      onNext();
+      if (data.count > 0) {
+        toast.success("Sucesso!", {
+          description: `${data.count} mensagens personalizadas foram geradas.`,
+        });
+        if (data.failures > 0) {
+          toast.warning("Atenção", {
+            description: `${data.failures} contatos falharam. Verifique os erros na tabela.`,
+          });
+        }
+        onNext();
+      } else if (data.error) {
+        toast.error("Erro na geração", { description: data.error });
+      } else {
+        toast.warning("Nenhuma mensagem gerada", {
+          description: "Verifique se seus contatos estão corretos.",
+        });
+      }
     } catch (error: any) {
       console.error("AI Generation Error:", error);
 
@@ -132,21 +153,21 @@ export function StepIAConfig({
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        <Card className="border-2 shadow-sm">
+        <Card className="border-2 shadow-sm flex flex-col">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-primary" />
               Instrução para a IA
             </CardTitle>
             <CardDescription>
-              Descreva como você quer que a mensagem seja. A IA usará os dados
-              da sua planilha para personalizar cada uma.
+              Escreva o modelo da mensagem. Use as variáveis abaixo para
+              personalizar.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 flex-1 flex flex-col">
             <Textarea
-              placeholder="Ex: Seja amigável, agradeça pela compra do {{product}} e ofereça um cupom de 10% para a próxima compra."
-              className="min-h-[150px] resize-none text-base leading-relaxed p-4 focus-visible:ring-primary/20"
+              placeholder="Ex: Olá {{name}}! Vi que você comprou {{produto}} recentemente. Que tal um desconto?"
+              className="min-h-[180px] flex-1 resize-none text-base leading-relaxed p-4 focus-visible:ring-primary/20 font-medium"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               disabled={isGenerating}
@@ -154,27 +175,34 @@ export function StepIAConfig({
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                Campos detectados na sua planilha:
+                Variáveis disponíveis:
               </label>
-              <div className="flex flex-wrap gap-2">
-                {availableFields.map((field) => (
-                  <Badge
-                    key={field}
-                    variant="secondary"
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-md lowercase cursor-pointer transition-colors border border-slate-200"
-                    onClick={() => {
-                      if (!isGenerating) {
-                        setPrompt((prev) => prev + ` {{${field}}}`);
-                      }
-                    }}
-                  >
-                    {field}
-                  </Badge>
-                ))}
-              </div>
+              {availableFields.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {availableFields.map((field) => (
+                    <Badge
+                      key={field}
+                      variant="secondary"
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-md lowercase cursor-pointer transition-colors border border-slate-200 select-none active:scale-95"
+                      onClick={() => {
+                        if (!isGenerating) {
+                          // Insert at cursor position if possible, otherwise append
+                          setPrompt((prev) => prev + ` {{${field}}}`);
+                        }
+                      }}
+                    >
+                      {`{{${field}}}`}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">
+                  Nenhuma variável detectada além de nome/telefone.
+                </p>
+              )}
               <p className="text-[10px] text-muted-foreground">
-                Dica: Clique em um campo acima para adicioná-lo ao texto. A IA
-                usará esses dados automaticamente.
+                Clique para adicionar ao texto. A IA substituirá pelo valor real
+                de cada contato.
               </p>
             </div>
           </CardContent>
@@ -185,21 +213,21 @@ export function StepIAConfig({
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Info className="h-4 w-4 text-primary" />
-                Como funciona?
+                Como funciona a substituição?
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
               <p>
-                1. A IA lerá as informações de cada um dos{" "}
-                <strong>{contactCount} contatos</strong>.
+                1. O sistema substituirá as variáveis (ex:{" "}
+                <code>{"{{name}}"}</code>) pelos dados reais da planilha.
               </p>
               <p>
-                2. Para cada linha da sua planilha, ela criará uma variação
-                exclusiva baseada na sua instrução.
+                2. O texto completo será enviado para o ChatGPT refinar e
+                humanizar.
               </p>
               <p>
-                3. Isso reduz o risco de bloqueio no WhatsApp por "mensagens
-                repetitivas".
+                3. Resultado: Mensagens naturais, sem "cara de robô", e sem
+                erros de formatação.
               </p>
               <div className="pt-2 border-t mt-4">
                 <p className="flex items-center gap-2 text-xs">
@@ -211,34 +239,44 @@ export function StepIAConfig({
           </Card>
 
           <div className="flex flex-col gap-3">
-            <Button
-              size="lg"
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 shadow-md shadow-primary/20 transition-all hover:-translate-y-1"
-              onClick={handleGenerate}
-              disabled={isGenerating || !prompt.trim()}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Gerando {contactCount} mensagens...
-                </>
-              ) : (
-                <>
-                  Gerar Mensagens com IA
-                  <Sparkles className="ml-2 h-5 w-5 fill-current" />
-                </>
-              )}
-            </Button>
+            {isGenerating ? (
+              <div className="w-full bg-slate-50 border rounded-lg p-6 space-y-4 text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                <div>
+                  <h3 className="font-semibold text-slate-900">
+                    Gerando mensagens...
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    Isso pode levar alguns minutos. Não feche esta página.
+                  </p>
+                </div>
+                <Progress value={33} className="h-2 w-full" />
+              </div>
+            ) : (
+              <>
+                <Button
+                  size="lg"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 shadow-md shadow-primary/20 transition-all hover:-translate-y-1"
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !prompt.trim()}
+                >
+                  <>
+                    Gerar {contactCount} Mensagens com IA
+                    <Sparkles className="ml-2 h-5 w-5 fill-current" />
+                  </>
+                </Button>
 
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={onNext}
-              disabled={isGenerating}
-            >
-              Pular IA e usar mensagens originais
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={onNext}
+                  disabled={isGenerating}
+                >
+                  Pular IA e usar mensagens originais
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

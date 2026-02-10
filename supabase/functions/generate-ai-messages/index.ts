@@ -6,6 +6,33 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Helper for variable replacement
+function replaceVariables(template: string, contact: any): string {
+  let result = template;
+
+  // Normalize contact data
+  const name = contact.name || "";
+  const phone = contact.phone || "";
+
+  // Replace standard fields (case insensitive)
+  result = result.replace(/{{\s*name\s*}}/gi, name);
+  result = result.replace(/{{\s*nome\s*}}/gi, name);
+  result = result.replace(/{{\s*phone\s*}}/gi, phone);
+  result = result.replace(/{{\s*telefone\s*}}/gi, phone);
+  result = result.replace(/{{\s*celular\s*}}/gi, phone);
+
+  // Replace metadata fields
+  if (contact.metadata && typeof contact.metadata === "object") {
+    Object.entries(contact.metadata).forEach(([key, value]) => {
+      // Create a regex for the key, case insensitive
+      const regex = new RegExp(`{{\\s*${key}\\s*}}`, "gi");
+      result = result.replace(regex, String(value || ""));
+    });
+  }
+
+  return result;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -34,7 +61,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const { campaign_id, prompt_base } = await req.json();
-    if (!campaign_id || !prompt_base) throw new Error("Missing parameters");
+    if (!campaign_id || !prompt_base)
+      throw new Error("Missing parameters: campaign_id or prompt_base");
 
     // Initialize admin client to get API key and update contacts
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -47,43 +75,74 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (profileError || !profile?.openai_api_key) {
-      throw new Error("OpenAI API Key não encontrada nas configurações.");
+      throw new Error(
+        "OpenAI API Key não encontrada. Por favor, configure sua chave em Configurações.",
+      );
     }
 
-    // 5. Fetch contacts for this campaign
-    const { data: campaignMessages, error: cmError } = await supabaseAdmin
-      .from("campaign_messages")
-      .select("contact_id, contacts(*)")
-      .eq("campaign_id", campaign_id);
+    // 5. Fetch ALL contacts for this campaign (handling pagination)
+    let allContacts: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    if (cmError) throw cmError;
+    while (hasMore) {
+      const { data: campaignMessages, error: cmError } = await supabaseAdmin
+        .from("campaign_messages")
+        .select("contact_id, contacts(*)")
+        .eq("campaign_id", campaign_id)
+        .range(page * pageSize, (page + 1) * pageSize - 1);
 
-    const contacts = (campaignMessages as any[])
-      .map((cm) => cm.contacts)
-      .filter(Boolean);
-    if (contacts.length === 0)
-      throw new Error("Nenhum contato encontrado nesta campanha.");
+      if (cmError) throw cmError;
 
-    console.log(`Generating AI messages for ${contacts.length} contacts...`);
+      if (campaignMessages && campaignMessages.length > 0) {
+        const pageContacts = campaignMessages
+          .map((cm) => cm.contacts)
+          .filter(Boolean);
+        allContacts = [...allContacts, ...pageContacts];
+
+        if (campaignMessages.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    if (allContacts.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          count: 0,
+          error: "Nenhum contato encontrado nesta campanha.",
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    console.log(`Generating AI messages for ${allContacts.length} contacts...`);
 
     // 6. Process each contact with OpenAI
-    // We'll do them in parallel with a limit or sequentially to avoid time timeouts.
-    // Given Edge Functions have limits, we'll do them in small batches or one by one.
-
     const results = [];
-    const BATCH_SIZE = 5; // Low batch size for stability in dynamic generation
+    const BATCH_SIZE = 5; // Parallel requests limit
 
-    for (let i = 0; i < contacts.length; i += BATCH_SIZE) {
-      const batch = contacts.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < allContacts.length; i += BATCH_SIZE) {
+      const batch = allContacts.slice(i, i + BATCH_SIZE);
       const batchPromises = batch.map(async (contact: any) => {
         try {
-          // Construct prompt with contact metadata
-          let contactInfo = `Nome: ${contact.name}\nTelefone: ${contact.phone}`;
-          if (contact.metadata && typeof contact.metadata === "object") {
-            Object.entries(contact.metadata).forEach(([key, value]) => {
-              contactInfo += `\n${key}: ${value}`;
-            });
-          }
+          // Perform Variable Replacement
+          const personalizedPrompt = replaceVariables(prompt_base, contact);
+
+          // Construct system prompt context
+          let systemContext =
+            "Você é um assistente de vendas especializado em mensagens de WhatsApp curtas, diretas e amigáveis.";
+          systemContext +=
+            " Responda APENAS com o texto da mensagem, sem aspas, sem explicações.";
+          systemContext += " Não use hashtags. Use emojis com moderação.";
 
           const response = await fetch(
             "https://api.openai.com/v1/chat/completions",
@@ -94,16 +153,15 @@ Deno.serve(async (req: Request) => {
                 Authorization: `Bearer ${profile.openai_api_key}`,
               },
               body: JSON.stringify({
-                model: "gpt-4o-mini",
+                model: "gpt-4o-mini", // Optimized model for speed/cost
                 messages: [
                   {
                     role: "system",
-                    content:
-                      "Você é um assistente de vendas especializado em mensagens de WhatsApp amigáveis e curtas. Use os dados do cliente para personalizar. Não use hashtags nem links a menos que solicitado. Gere apenas o texto da mensagem.",
+                    content: systemContext,
                   },
                   {
                     role: "user",
-                    content: `Instrução base: ${prompt_base}\n\nDados do Cliente:\n${contactInfo}`,
+                    content: personalizedPrompt,
                   },
                 ],
                 temperature: 0.7,
@@ -113,20 +171,32 @@ Deno.serve(async (req: Request) => {
           );
 
           const aiData = await response.json();
-          if (!response.ok)
-            throw new Error(aiData.error?.message || "OpenAI Error");
+          if (!response.ok) {
+            const errorMsg = aiData.error?.message || "Erro na API da OpenAI";
+            throw new Error(errorMsg);
+          }
 
           const generatedMessage = aiData.choices[0].message.content.trim();
 
           // Update contact in DB
-          await supabaseAdmin
+          const { error: updateError } = await supabaseAdmin
             .from("contacts")
             .update({ message: generatedMessage })
             .eq("id", contact.id);
 
+          if (updateError) throw updateError;
+
           return { success: true, contact_id: contact.id };
         } catch (err: any) {
           console.error(`Error for contact ${contact.id}:`, err);
+
+          // Log error to campaign_messages to help debug
+          await supabaseAdmin
+            .from("campaign_messages")
+            .update({ error_message: `AI Error: ${err.message}` })
+            .eq("campaign_id", campaign_id)
+            .eq("contact_id", contact.id);
+
           return { success: false, contact_id: contact.id, error: err.message };
         }
       });
@@ -135,10 +205,15 @@ Deno.serve(async (req: Request) => {
       results.push(...batchResults);
     }
 
+    const successCount = results.filter((r) => r.success).length;
+    const failureCount = results.length - successCount;
+
     return new Response(
       JSON.stringify({
         success: true,
-        count: results.filter((r) => r.success).length,
+        count: successCount,
+        failures: failureCount,
+        total: allContacts.length,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -146,7 +221,7 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error: any) {
     console.error("AI Generation error:", error);
-    // Return 401 for auth errors to help frontend handle it better
+
     const status =
       error.message === "Unauthorized" ||
       error.message === "Missing Authorization header"
