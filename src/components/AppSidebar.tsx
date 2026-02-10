@@ -141,7 +141,7 @@ export function AppSidebar() {
             <span className="font-bold text-white text-xl">R</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold text-slate-900 leading-none">
+            <span className="font-bold text-lg tracking-tight text-foreground">
               Ripple
             </span>
             <span className="text-xs text-slate-500 font-medium mt-1">
