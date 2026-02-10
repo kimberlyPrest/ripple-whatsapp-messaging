@@ -68,7 +68,7 @@ Deno.serve(async (req: Request) => {
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // 4. Get user Gemini key
-    // Note: We access the profile directly. Since migration adds the column, it is available.
+    // We fetch the profile using the authenticated user's ID
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("gemini_api_key")
@@ -132,7 +132,7 @@ Deno.serve(async (req: Request) => {
     // 6. Process each contact with Gemini
     const results = [];
     const BATCH_SIZE = 5; // Parallel requests limit (Conservative for Gemini free/pay-as-you-go)
-    const MODEL_NAME = "gemini-2.5-flash"; // As requested
+    const MODEL_NAME = "gemini-2.5-flash"; // Using 2.5 Flash as requested
 
     for (let i = 0; i < allContacts.length; i += BATCH_SIZE) {
       const batch = allContacts.slice(i, i + BATCH_SIZE);
@@ -241,7 +241,7 @@ Deno.serve(async (req: Request) => {
       error.message === "Unauthorized" ||
       error.message === "Missing Authorization header"
         ? 401
-        : 400;
+        : 400; // Return 400 for business logic errors like missing key
 
     return new Response(JSON.stringify({ error: error.message }), {
       status,

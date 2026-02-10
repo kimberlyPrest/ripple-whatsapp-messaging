@@ -7,7 +7,6 @@ import {
   Info,
   Key,
   MessageSquare,
-  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +21,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { campaignsService } from "@/services/campaigns";
 import { Progress } from "@/components/ui/progress";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
+import { profileService } from "@/services/profile";
 
 interface StepIAConfigProps {
   campaignId: string;
@@ -34,6 +36,8 @@ export function StepIAConfig({
   onBack,
   onNext,
 }: StepIAConfigProps) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [availableFields, setAvailableFields] = useState<string[]>([]);
@@ -79,6 +83,27 @@ export function StepIAConfig({
       return;
     }
 
+    // Pre-execution check: Verify if Gemini API Key exists in profile
+    if (user) {
+      try {
+        const profile = await profileService.get(user.id);
+        if (!profile?.gemini_api_key) {
+          toast.error("Gemini API Key não encontrada", {
+            description: "Por favor, configure sua chave em Configurações.",
+            action: {
+              label: "Configurar",
+              onClick: () => navigate("/settings"),
+            },
+            duration: 5000,
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error validating API key:", error);
+        // Continue and let the backend handle the error if validation fails due to network
+      }
+    }
+
     setIsGenerating(true);
     try {
       // Optimistic user feedback
@@ -103,7 +128,21 @@ export function StepIAConfig({
         }
         onNext();
       } else if (data.error) {
-        toast.error("Erro na geração", { description: data.error });
+        // Handle explicit error returned in JSON (success: false)
+        if (
+          data.error ===
+          "Gemini API Key não encontrada. Por favor, configure sua chave em Configurações."
+        ) {
+          toast.error("Gemini API Key não encontrada", {
+            description: "Por favor, configure sua chave em Configurações.",
+            action: {
+              label: "Configurar",
+              onClick: () => navigate("/settings"),
+            },
+          });
+        } else {
+          toast.error("Erro na geração", { description: data.error });
+        }
       } else {
         toast.warning("Nenhuma mensagem gerada", {
           description: "Verifique se seus contatos estão corretos.",
@@ -118,6 +157,11 @@ export function StepIAConfig({
         error?.message?.includes("Unauthorized") ||
         error?.message?.includes("JWT");
 
+      const errorMessage = error.message || "";
+      const isMissingKeyError =
+        errorMessage.includes("Gemini API Key não encontrada") ||
+        errorMessage.includes("configure sua chave");
+
       if (isAuthError) {
         toast.error("Sessão expirada", {
           description:
@@ -127,10 +171,18 @@ export function StepIAConfig({
             onClick: () => window.location.reload(),
           },
         });
+      } else if (isMissingKeyError) {
+        toast.error("Gemini API Key não encontrada", {
+          description: "Por favor, configure sua chave em Configurações.",
+          action: {
+            label: "Configurar",
+            onClick: () => navigate("/settings"),
+          },
+        });
       } else {
         toast.error("Erro ao gerar mensagens", {
           description:
-            error.message ||
+            errorMessage ||
             "Verifique sua chave de API do Gemini nas configurações ou tente novamente.",
         });
       }
