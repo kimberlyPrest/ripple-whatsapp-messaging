@@ -61,7 +61,10 @@ export function ProfileCard({
 
   const form = useForm({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: profile.name || "", openai_api_key: profile.openai_api_key || "" },
+    defaultValues: {
+      name: profile.name || "",
+      openai_api_key: profile.openai_api_key || "",
+    },
   });
 
   const passwordForm = useForm({
@@ -198,7 +201,9 @@ export function ProfileCard({
                       <FormItem>
                         <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                           OpenAI API Key
-                          <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded uppercase">AI Power</span>
+                          <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded uppercase">
+                            AI Power
+                          </span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -210,7 +215,8 @@ export function ProfileCard({
                           />
                         </FormControl>
                         <FormDescription className="text-[10px]">
-                          Usada para gerar mensagens personalizadas com IA. Suas chaves são criptografadas e seguras.
+                          Usada para gerar mensagens personalizadas com IA. Suas
+                          chaves são criptografadas e seguras.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

@@ -16,7 +16,10 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: req.headers.get("Authorization")! } },
     });
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseClient.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
     const { campaign_id, prompt_base } = await req.json();
@@ -44,8 +47,11 @@ Deno.serve(async (req: Request) => {
 
     if (cmError) throw cmError;
 
-    const contacts = (campaignMessages as any[]).map(cm => cm.contacts).filter(Boolean);
-    if (contacts.length === 0) throw new Error("Nenhum contato encontrado nesta campanha.");
+    const contacts = (campaignMessages as any[])
+      .map((cm) => cm.contacts)
+      .filter(Boolean);
+    if (contacts.length === 0)
+      throw new Error("Nenhum contato encontrado nesta campanha.");
 
     console.log(`Generating AI messages for ${contacts.length} contacts...`);
 
@@ -63,37 +69,42 @@ Deno.serve(async (req: Request) => {
         try {
           // Construct prompt with contact metadata
           let contactInfo = `Nome: ${contact.name}\nTelefone: ${contact.phone}`;
-          if (contact.metadata && typeof contact.metadata === 'object') {
+          if (contact.metadata && typeof contact.metadata === "object") {
             Object.entries(contact.metadata).forEach(([key, value]) => {
               contactInfo += `\n${key}: ${value}`;
             });
           }
 
-          const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${profile.openai_api_key}`,
+          const response = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${profile.openai_api_key}`,
+              },
+              body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "Você é um assistente de vendas especializado em mensagens de WhatsApp amigáveis e curtas. Use os dados do cliente para personalizar. Não use hashtags nem links a menos que solicitado. Gere apenas o texto da mensagem.",
+                  },
+                  {
+                    role: "user",
+                    content: `Instrução base: ${prompt_base}\n\nDados do Cliente:\n${contactInfo}`,
+                  },
+                ],
+                temperature: 0.7,
+                max_tokens: 300,
+              }),
             },
-            body: JSON.stringify({
-              model: "gpt-4o-mini",
-              messages: [
-                {
-                  role: "system",
-                  content: "Você é um assistente de vendas especializado em mensagens de WhatsApp amigáveis e curtas. Use os dados do cliente para personalizar. Não use hashtags nem links a menos que solicitado. Gere apenas o texto da mensagem."
-                },
-                {
-                  role: "user",
-                  content: `Instrução base: ${prompt_base}\n\nDados do Cliente:\n${contactInfo}`
-                }
-              ],
-              temperature: 0.7,
-              max_tokens: 300,
-            }),
-          });
+          );
 
           const aiData = await response.json();
-          if (!response.ok) throw new Error(aiData.error?.message || "OpenAI Error");
+          if (!response.ok)
+            throw new Error(aiData.error?.message || "OpenAI Error");
 
           const generatedMessage = aiData.choices[0].message.content.trim();
 
@@ -114,9 +125,15 @@ Deno.serve(async (req: Request) => {
       results.push(...batchResults);
     }
 
-    return new Response(JSON.stringify({ success: true, count: results.filter(r => r.success).length }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        count: results.filter((r) => r.success).length,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   } catch (error: any) {
     console.error("AI Generation error:", error);
     return new Response(JSON.stringify({ error: error.message }), {

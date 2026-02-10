@@ -78,11 +78,11 @@ export default function Upload() {
         max_interval: values.maxInterval,
         batch_config: values.useBatching
           ? {
-            enabled: true,
-            size: values.batchSize,
-            pause_min: values.batchPauseMin,
-            pause_max: values.batchPauseMax,
-          }
+              enabled: true,
+              size: values.batchSize,
+              pause_min: values.batchPauseMin,
+              pause_max: values.batchPauseMax,
+            }
           : { enabled: false },
         business_hours: {
           strategy: values.businessHoursStrategy,

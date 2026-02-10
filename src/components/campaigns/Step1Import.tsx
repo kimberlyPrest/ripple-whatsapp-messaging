@@ -245,8 +245,13 @@ export function Step1Import({ onNext, isProcessing }: Step1ImportProps) {
             </CardContent>
           </Card>
           <p className="text-xs text-slate-400">
-            <span className="text-green-600 font-medium">*Obrigatórias:</span> Nome e Telefone.
-            <span className="text-blue-500 font-medium ml-1">Colunas extras</span> (Produto, Cidade, etc.) serão usadas pela IA para personalizar mensagens.
+            <span className="text-green-600 font-medium">*Obrigatórias:</span>{" "}
+            Nome e Telefone.
+            <span className="text-blue-500 font-medium ml-1">
+              Colunas extras
+            </span>{" "}
+            (Produto, Cidade, etc.) serão usadas pela IA para personalizar
+            mensagens.
           </p>
         </div>
 

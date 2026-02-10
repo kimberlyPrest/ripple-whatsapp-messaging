@@ -27,7 +27,12 @@ export const contactsService = {
   },
 
   async createBulk(
-    contacts: { name: string; phone: string; message?: string; metadata?: any }[],
+    contacts: {
+      name: string;
+      phone: string;
+      message?: string;
+      metadata?: any;
+    }[],
   ) {
     const {
       data: { user },
