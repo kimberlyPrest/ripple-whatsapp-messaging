@@ -67,7 +67,12 @@ export const parseCSV = async (file: File): Promise<ParsedContact[]> => {
           if (row.length > Math.max(nameIndex, phoneIndex)) {
             const metadata: Record<string, string> = {};
             headers.forEach((header, idx) => {
-              if (row[idx] !== undefined) {
+              if (
+                row[idx] !== undefined &&
+                idx !== nameIndex &&
+                idx !== phoneIndex &&
+                idx !== messageIndex
+              ) {
                 metadata[header] = row[idx];
               }
             });

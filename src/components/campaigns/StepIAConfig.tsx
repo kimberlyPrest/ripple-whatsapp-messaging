@@ -45,9 +45,24 @@ export function StepIAConfig({
         setContactCount(messages.length);
 
         if (messages.length > 0 && messages[0].contacts) {
-          const contact = messages[0].contacts as any;
+          const contact = messages[0].contacts;
+          // Extract keys from metadata
           const metadata = contact.metadata || {};
-          const fields = ["nome", "telefone", ...Object.keys(metadata)];
+          // Filter out name and phone if they somehow exist in metadata (though they shouldn't with new CSV parser)
+          const metadataKeys = Object.keys(metadata).filter(
+            (key) =>
+              ![
+                "name",
+                "phone",
+                "nome",
+                "telefone",
+                "celular",
+                "message",
+              ].includes(key.toLowerCase()),
+          );
+
+          // List "name" and "phone" first, then other metadata keys
+          const fields = ["name", "phone", ...metadataKeys];
           setAvailableFields([...new Set(fields)]);
         }
       } catch (error) {
@@ -117,7 +132,7 @@ export function StepIAConfig({
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
-              placeholder="Ex: Seja amigável, agradeça pela compra do {{produto}} e ofereça um cupom de 10% para a próxima compra."
+              placeholder="Ex: Seja amigável, agradeça pela compra do {{product}} e ofereça um cupom de 10% para a próxima compra."
               className="min-h-[150px] resize-none text-base leading-relaxed p-4 focus-visible:ring-primary/20"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -132,7 +147,7 @@ export function StepIAConfig({
                   <Badge
                     key={field}
                     variant="secondary"
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-md lowercase cursor-pointer"
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-md lowercase cursor-pointer transition-colors border border-slate-200"
                     onClick={() => setPrompt((prev) => prev + ` {{${field}}}`)}
                   >
                     {field}

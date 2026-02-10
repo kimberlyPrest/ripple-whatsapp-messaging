@@ -124,13 +124,13 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
   };
 
   const handleEditClick = (message: CampaignMessage) => {
-    // Construct a Contact object from the joined data to pass to EditContactDialog
     if (message.contacts) {
       const contact: Contact = {
         id: message.contact_id,
         name: message.contacts.name,
         phone: message.contacts.phone,
-        message: (message.contacts as any).message || "",
+        message: message.contacts.message || "",
+        metadata: message.contacts.metadata || {},
         created_at: "",
         user_id: "",
         status: "pendente",
@@ -143,17 +143,13 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
   const handleSendOne = async (message: CampaignMessage) => {
     if (!message.contacts) return;
 
-    // Simulate send or actual send? Step 2 is Review.
-    // User story: "hoverable actions (individual Send, Edit, and Delete)"
-    // We can use contactsService to send immediately.
-
     try {
-      // Re-construct minimal contact for sending
       const contact: Contact = {
         id: message.contact_id,
         name: message.contacts.name,
         phone: message.contacts.phone,
-        message: (message.contacts as any).message || "",
+        message: message.contacts.message || "",
+        metadata: message.contacts.metadata || {},
         created_at: "",
         user_id: "",
         status: "pendente",
@@ -247,7 +243,7 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={() => setSelectedIds(messages.map((m) => m.id))} // Select all internally just in case handleBulkDelete uses it
+                  onClick={() => setSelectedIds(messages.map((m) => m.id))}
                   className="bg-destructive hover:bg-destructive/90"
                 >
                   <div onClick={handleBulkDelete}>Sim, excluir tudo</div>
@@ -382,7 +378,7 @@ export function Step2Review({ campaignId, onBack, onNext }: Step2ReviewProps) {
         </div>
       </Card>
 
-      {/* Selected Action Bar (Optional but good UX) */}
+      {/* Selected Action Bar */}
       {selectedIds.length > 0 && (
         <div className="bg-foreground text-background px-4 py-2 rounded-lg flex justify-between items-center animate-fade-in-up shadow-lg">
           <span className="text-sm font-medium">

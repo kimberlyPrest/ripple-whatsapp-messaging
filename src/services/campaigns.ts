@@ -35,6 +35,8 @@ export interface CampaignMessage {
   contacts: {
     name: string;
     phone: string;
+    message?: string | null;
+    metadata?: Record<string, any> | null;
   } | null;
 }
 
@@ -194,7 +196,7 @@ export const campaignsService = {
   async getMessages(campaignId: string) {
     const { data, error } = await supabase
       .from("campaign_messages")
-      .select("*, contacts(name, phone, message)")
+      .select("*, contacts(name, phone, message, metadata)")
       .eq("campaign_id", campaignId)
       .order("id", { ascending: true });
 
