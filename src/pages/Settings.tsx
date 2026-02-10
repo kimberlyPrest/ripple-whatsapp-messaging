@@ -397,7 +397,7 @@ export default function Settings() {
                               Webhook (n8n)
                             </TabsTrigger>
                             <TabsTrigger value="evolution">
-                              WhatsApp Nativo (Cloudfy)
+                              Evolution
                             </TabsTrigger>
                           </TabsList>
 
