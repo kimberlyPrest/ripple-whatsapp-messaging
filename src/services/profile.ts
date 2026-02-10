@@ -6,6 +6,9 @@ export type ProfileData = {
   email: string | null;
   avatar_url: string | null;
   webhook_url: string | null;
+  whatsapp_connection_type: "webhook" | "evolution";
+  evolution_instance_id: string | null;
+  whatsapp_status: string | null;
   created_at?: string;
 };
 
@@ -27,6 +30,9 @@ export const profileService = {
       name?: string;
       avatar_url?: string | null;
       webhook_url?: string | null;
+      whatsapp_connection_type?: "webhook" | "evolution";
+      evolution_instance_id?: string | null;
+      whatsapp_status?: string | null;
     },
   ) {
     const { error } = await supabase

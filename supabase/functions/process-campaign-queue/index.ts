@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
     // 1. Fetch active or scheduled campaigns (Explicitly excluding paused)
     let query = supabase
       .from("campaigns")
-      .select("*, profiles!campaigns_user_id_fkey(webhook_url)")
+      .select("*, profiles!campaigns_user_id_fkey(webhook_url, whatsapp_connection_type, evolution_instance_id)")
       .in("status", ["scheduled", "pending", "processing", "active"]);
 
     // If campaign_id is provided (manual trigger), filter by it
@@ -406,6 +406,8 @@ Deno.serve(async (req: Request) => {
                 phone: contact.phone,
                 message: contact.message,
                 webhookUrl: (campaign as any).profiles?.webhook_url,
+                evolutionInstanceId: (campaign as any).profiles?.evolution_instance_id,
+                connectionType: (campaign as any).profiles?.whatsapp_connection_type,
               }),
             },
           );
