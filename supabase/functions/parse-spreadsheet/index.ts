@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import * as XLSX from "xlsx";
+import { read, utils } from "xlsx";
 
 Deno.serve(async (req: Request) => {
   // Handle CORS
@@ -9,7 +9,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { file, type } = await req.json();
+    const { file } = await req.json();
 
     if (!file) {
       throw new Error("File content is required");
@@ -23,14 +23,14 @@ Deno.serve(async (req: Request) => {
     }
 
     // Parse workbook
-    const workbook = XLSX.read(bytes, { type: "array" });
+    const workbook = read(bytes, { type: "array" });
 
     // Get first sheet
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
 
     // Convert to JSON (array of arrays for headers)
-    const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    const rawData = utils.sheet_to_json(worksheet, { header: 1 });
 
     if (!rawData || rawData.length === 0) {
       throw new Error("Spreadsheet is empty");
@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
     const headers = (rawData[0] as any[])
       .map((h) => String(h || "").trim())
       .filter((h) => h !== "");
-    const rows = XLSX.utils.sheet_to_json(worksheet, { header: headers });
+    const rows = utils.sheet_to_json(worksheet, { header: headers });
 
     return new Response(JSON.stringify({ headers, rows }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
