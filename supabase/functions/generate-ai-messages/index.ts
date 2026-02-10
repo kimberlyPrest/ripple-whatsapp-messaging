@@ -67,16 +67,17 @@ Deno.serve(async (req: Request) => {
     // Initialize admin client to get API key and update contacts
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 4. Get user OpenAI key
+    // 4. Get user Gemini key
+    // Note: We access the profile directly. Since migration adds the column, it is available.
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("openai_api_key")
+      .select("gemini_api_key")
       .eq("id", user.id)
       .single();
 
-    if (profileError || !profile?.openai_api_key) {
+    if (profileError || !profile?.gemini_api_key) {
       throw new Error(
-        "OpenAI API Key não encontrada. Por favor, configure sua chave em Configurações.",
+        "Gemini API Key não encontrada. Por favor, configure sua chave em Configurações.",
       );
     }
 
@@ -124,11 +125,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`Generating AI messages for ${allContacts.length} contacts...`);
+    console.log(
+      `Generating AI messages for ${allContacts.length} contacts using Gemini...`,
+    );
 
-    // 6. Process each contact with OpenAI
+    // 6. Process each contact with Gemini
     const results = [];
-    const BATCH_SIZE = 5; // Parallel requests limit
+    const BATCH_SIZE = 5; // Parallel requests limit (Conservative for Gemini free/pay-as-you-go)
+    const MODEL_NAME = "gemini-2.5-flash"; // As requested
 
     for (let i = 0; i < allContacts.length; i += BATCH_SIZE) {
       const batch = allContacts.slice(i, i + BATCH_SIZE);
@@ -144,39 +148,50 @@ Deno.serve(async (req: Request) => {
             " Responda APENAS com o texto da mensagem, sem aspas, sem explicações.";
           systemContext += " Não use hashtags. Use emojis com moderação.";
 
+          // Combine system context with prompt for Gemini (simple prompting)
+          const finalPrompt = `${systemContext}\n\nInstrução: ${personalizedPrompt}`;
+
           const response = await fetch(
-            "https://api.openai.com/v1/chat/completions",
+            `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${profile.gemini_api_key}`,
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${profile.openai_api_key}`,
               },
               body: JSON.stringify({
-                model: "gpt-4o-mini", // Optimized model for speed/cost
-                messages: [
+                contents: [
                   {
-                    role: "system",
-                    content: systemContext,
-                  },
-                  {
-                    role: "user",
-                    content: personalizedPrompt,
+                    parts: [
+                      {
+                        text: finalPrompt,
+                      },
+                    ],
                   },
                 ],
-                temperature: 0.7,
-                max_tokens: 300,
+                generationConfig: {
+                  temperature: 0.7,
+                  maxOutputTokens: 300,
+                },
               }),
             },
           );
 
           const aiData = await response.json();
           if (!response.ok) {
-            const errorMsg = aiData.error?.message || "Erro na API da OpenAI";
+            const errorMsg =
+              aiData.error?.message ||
+              `Erro na API do Gemini: ${response.statusText}`;
             throw new Error(errorMsg);
           }
 
-          const generatedMessage = aiData.choices[0].message.content.trim();
+          // Parse Gemini Response
+          // candidates[0].content.parts[0].text
+          const generatedMessage =
+            aiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+          if (!generatedMessage) {
+            throw new Error("Gemini retornou uma resposta vazia.");
+          }
 
           // Update contact in DB
           const { error: updateError } = await supabaseAdmin
@@ -193,7 +208,7 @@ Deno.serve(async (req: Request) => {
           // Log error to campaign_messages to help debug
           await supabaseAdmin
             .from("campaign_messages")
-            .update({ error_message: `AI Error: ${err.message}` })
+            .update({ error_message: `Gemini Error: ${err.message}` })
             .eq("campaign_id", campaign_id)
             .eq("contact_id", contact.id);
 

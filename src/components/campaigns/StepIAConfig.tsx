@@ -82,7 +82,7 @@ export function StepIAConfig({
     setIsGenerating(true);
     try {
       // Optimistic user feedback
-      toast.info("Iniciando geração de mensagens...", {
+      toast.info("Iniciando geração com Gemini AI...", {
         description:
           "Isso pode levar alguns minutos dependendo da quantidade de contatos.",
       });
@@ -131,7 +131,7 @@ export function StepIAConfig({
         toast.error("Erro ao gerar mensagens", {
           description:
             error.message ||
-            "Verifique sua chave de AI nas configurações ou tente novamente.",
+            "Verifique sua chave de API do Gemini nas configurações ou tente novamente.",
         });
       }
     } finally {
@@ -143,12 +143,12 @@ export function StepIAConfig({
     <div className="space-y-8 animate-fade-in-up">
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Sparkles className="h-8 w-8 text-yellow-500 fill-yellow-500/20" />
-          Personalização com IA
+          <Sparkles className="h-8 w-8 text-blue-500 fill-blue-500/20" />
+          Personalização com Gemini AI
         </h1>
         <p className="text-muted-foreground text-lg">
-          Use o poder da inteligência artificial para criar mensagens únicas
-          para cada cliente.
+          Use o poder da inteligência artificial do Google para criar mensagens
+          únicas para cada cliente.
         </p>
       </div>
 
@@ -201,8 +201,8 @@ export function StepIAConfig({
                 </p>
               )}
               <p className="text-[10px] text-muted-foreground">
-                Clique para adicionar ao texto. A IA substituirá pelo valor real
-                de cada contato.
+                Clique para adicionar ao texto. O Gemini substituirá pelo valor
+                real de cada contato.
               </p>
             </div>
           </CardContent>
@@ -222,8 +222,8 @@ export function StepIAConfig({
                 <code>{"{{name}}"}</code>) pelos dados reais da planilha.
               </p>
               <p>
-                2. O texto completo será enviado para o ChatGPT refinar e
-                humanizar.
+                2. O texto completo será enviado para o{" "}
+                <strong>Gemini 2.5 Flash</strong> refinar e humanizar.
               </p>
               <p>
                 3. Resultado: Mensagens naturais, sem "cara de robô", e sem
@@ -232,7 +232,7 @@ export function StepIAConfig({
               <div className="pt-2 border-t mt-4">
                 <p className="flex items-center gap-2 text-xs">
                   <Key className="h-3 w-3" />
-                  Requer OpenAI Key configurada.
+                  Requer Gemini API Key configurada.
                 </p>
               </div>
             </CardContent>
@@ -256,12 +256,12 @@ export function StepIAConfig({
               <>
                 <Button
                   size="lg"
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 shadow-md shadow-primary/20 transition-all hover:-translate-y-1"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 shadow-md shadow-blue-500/20 transition-all hover:-translate-y-1"
                   onClick={handleGenerate}
                   disabled={isGenerating || !prompt.trim()}
                 >
                   <>
-                    Gerar {contactCount} Mensagens com IA
+                    Gerar {contactCount} Mensagens com Gemini
                     <Sparkles className="ml-2 h-5 w-5 fill-current" />
                   </>
                 </Button>

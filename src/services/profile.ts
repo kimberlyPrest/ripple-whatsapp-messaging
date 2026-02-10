@@ -11,6 +11,7 @@ export type ProfileData = {
   whatsapp_status: string | null;
   whatsapp_connected_at?: string | null;
   openai_api_key: string | null;
+  gemini_api_key: string | null;
   created_at?: string;
 };
 
@@ -23,7 +24,8 @@ export const profileService = {
       .single();
 
     if (error) throw error;
-    return data as ProfileData;
+    // Casting to unknown first to bypass missing type in generated types
+    return data as unknown as ProfileData;
   },
 
   async update(
@@ -37,6 +39,7 @@ export const profileService = {
       whatsapp_status?: string | null;
       whatsapp_connected_at?: string | null;
       openai_api_key?: string | null;
+      gemini_api_key?: string | null;
     },
   ) {
     const { error } = await supabase

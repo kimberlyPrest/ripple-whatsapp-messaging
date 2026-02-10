@@ -24,13 +24,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, Camera, User as UserIcon, Lock, Key } from "lucide-react";
+import {
+  Loader2,
+  Camera,
+  User as UserIcon,
+  Lock,
+  Key,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { profileService, ProfileData } from "@/services/profile";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  openai_api_key: z.string().optional(),
+  gemini_api_key: z.string().optional(),
 });
 
 const passwordSchema = z
@@ -63,7 +70,7 @@ export function ProfileCard({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: profile.name || "",
-      openai_api_key: profile.openai_api_key || "",
+      gemini_api_key: profile.gemini_api_key || "",
     },
   });
 
@@ -92,7 +99,7 @@ export function ProfileCard({
 
       await profileService.update(user.id, {
         name: data.name,
-        openai_api_key: data.openai_api_key,
+        gemini_api_key: data.gemini_api_key,
         ...(avatarUrl && { avatar_url: avatarUrl }),
       });
 
@@ -196,27 +203,29 @@ export function ProfileCard({
                 <div className="grid gap-6">
                   <FormField
                     control={form.control}
-                    name="openai_api_key"
+                    name="gemini_api_key"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                          OpenAI API Key
-                          <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded uppercase">
-                            AI Power
+                          Gemini API Key
+                          <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded uppercase flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            Google AI
                           </span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             type="password"
                             className="bg-gray-50/50"
-                            placeholder="sk-..."
+                            placeholder="AIza..."
                             {...field}
                             value={field.value || ""}
                           />
                         </FormControl>
                         <FormDescription className="text-[10px]">
-                          Usada para gerar mensagens personalizadas com IA. Suas
-                          chaves são criptografadas e seguras.
+                          Usada para gerar mensagens personalizadas com Google
+                          Gemini 2.5 Flash. Suas chaves são criptografadas e
+                          seguras.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
