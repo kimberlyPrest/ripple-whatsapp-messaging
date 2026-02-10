@@ -49,7 +49,7 @@ Deno.serve(async (req: Request) => {
     let query = supabase
       .from("campaigns")
       .select(
-        "*, profiles!campaigns_user_id_fkey(webhook_url, whatsapp_connection_type, evolution_instance_id)",
+        "*, profiles!campaigns_user_id_fkey(whatsapp_status, webhook_url, whatsapp_connection_type, evolution_instance_id)",
       )
       .in("status", ["scheduled", "pending", "processing", "active"]);
 
@@ -65,6 +65,33 @@ Deno.serve(async (req: Request) => {
 
     if (campaignsError) throw campaignsError;
 
+    // If a specific campaign was requested but not found (e.g. maybe it was paused or finished),
+    // we should let the user know, unless it's just empty queue
+    if (campaign_id && (!campaigns || campaigns.length === 0)) {
+      // Check if it exists at all to give better error
+      const { data: exists } = await supabase
+        .from("campaigns")
+        .select("status")
+        .eq("id", campaign_id)
+        .single();
+
+      if (exists) {
+        if (exists.status === "paused") {
+          throw new Error("A campanha está pausada. Retome-a para processar.");
+        }
+        if (exists.status === "finished") {
+          throw new Error("A campanha já foi finalizada.");
+        }
+        if (exists.status === "failed" || exists.status === "canceled") {
+          throw new Error(
+            `A campanha está marcada como ${exists.status}. Retome-a para tentar novamente.`,
+          );
+        }
+      }
+      // If we are here, it means it's not ready or doesn't exist
+      throw new Error("Campanha não encontrada ou não está pronta para envio.");
+    }
+
     console.log(`Processing ${campaigns.length} campaigns`);
 
     const results = [];
@@ -72,6 +99,21 @@ Deno.serve(async (req: Request) => {
     for (const campaign of campaigns) {
       // Check execution time limit
       if (Date.now() - startTime > MAX_EXECUTION_TIME) break;
+
+      // VALIDATION: Check WhatsApp Connection Status
+      const profile = (campaign as any).profiles;
+      if (!profile || profile.whatsapp_status !== "CONNECTED") {
+        console.error(
+          `Campaign ${campaign.id} skipped: WhatsApp not connected`,
+        );
+        // If this was a manual trigger, we should error out
+        if (campaign_id) {
+          throw new Error(
+            "WhatsApp desconectado. Verifique sua conexão nas configurações.",
+          );
+        }
+        continue;
+      }
 
       const campaignResult = {
         id: campaign.id,
@@ -136,20 +178,12 @@ Deno.serve(async (req: Request) => {
               .map(Number);
 
             // Check if we hit the pause time today (BRT)
-            // We need precise minutes comparison
             const nowMinutes = brtHours * 60 + now.getUTCMinutes();
             const pauseMinutes = pauseH * 60 + pauseM;
 
-            // Check if we are past the start date
             const startDateTime = new Date(
               campaign.started_at || campaign.created_at,
             );
-
-            // Simple logic:
-            // If it's currently past the daily pause time -> PAUSE
-            // OR if the current date is AFTER the start date (meaning we already passed the first day's allowed window) -> PAUSE
-
-            // Compare dates (ignoring time)
             const todayStr = now.toISOString().split("T")[0];
             const startStr = startDateTime.toISOString().split("T")[0];
 
@@ -195,14 +229,11 @@ Deno.serve(async (req: Request) => {
         const startedAt = campaign.started_at
           ? new Date(campaign.started_at)
           : new Date(campaign.created_at);
-        // Ensure we calculate from started_at to now
         const executionTime = Math.max(
           0,
           Math.floor((now.getTime() - startedAt.getTime()) / 1000),
         );
 
-        // SYNC: Count actual sent messages to ensure consistency and correct UI display
-        // This fixes the issue where sent_messages might be incorrect (e.g. 0/1 for success)
         const { count: realSentCount, error: countError } = await supabase
           .from("campaign_messages")
           .select("*", { count: "exact", head: true })
@@ -222,7 +253,6 @@ Deno.serve(async (req: Request) => {
           execution_time: executionTime,
         };
 
-        // Only update sent_messages if the count was successful
         if (!countError && realSentCount !== null) {
           updatePayload.sent_messages = realSentCount;
         }
@@ -236,7 +266,6 @@ Deno.serve(async (req: Request) => {
       };
 
       // Check for completion (Initial Check)
-      // We perform this check at the beginning to handle cases where it finished right after previous run or if empty.
       const { count: pendingCount, error: pendingError } = await supabase
         .from("campaign_messages")
         .select("*", { count: "exact", head: true })
@@ -252,7 +281,7 @@ Deno.serve(async (req: Request) => {
       }
 
       if (pendingCount === 0) {
-        // Ensure there are no active messages being processed/sent (locked by other workers)
+        // Ensure there are no active messages being processed/sent
         const { count: activeCount } = await supabase
           .from("campaign_messages")
           .select("*", { count: "exact", head: true })
@@ -272,8 +301,7 @@ Deno.serve(async (req: Request) => {
         campaignLoopActive &&
         Date.now() - startTime < MAX_EXECUTION_TIME
       ) {
-        // 1. CRITICAL: Check if campaign status changed to PAUSED during execution
-        // This ensures immediate pause response
+        // 1. Check if campaign status changed
         const { data: currentStatus } = await supabase
           .from("campaigns")
           .select("status")
@@ -317,7 +345,6 @@ Deno.serve(async (req: Request) => {
         requiredDelay = intervalDelay;
 
         // Batch Pause Logic
-        // We add the batch pause to the delay if this is a "batch break" message
         if (
           config?.useBatching &&
           config.batchSize &&
@@ -332,8 +359,6 @@ Deno.serve(async (req: Request) => {
           requiredDelay += batchPause;
         }
 
-        // CRITICAL: First message must be sent immediately (0 delay)
-        // If we haven't sent any messages yet (checked via DB query to be safe), force 0 delay.
         if (!hasMessagesSentReally) {
           requiredDelay = 0;
         }
@@ -342,7 +367,6 @@ Deno.serve(async (req: Request) => {
 
         if (timeSinceLast < requiredDelay) {
           const waitTime = requiredDelay - timeSinceLast;
-          // If the wait time is too long for this execution window, break and wait for next cron
           if (Date.now() + waitTime > startTime + MAX_EXECUTION_TIME) {
             campaignLoopActive = false;
             break;
@@ -350,7 +374,7 @@ Deno.serve(async (req: Request) => {
           await new Promise((resolve) => setTimeout(resolve, waitTime));
         }
 
-        // Fetch ONE message to send (Locking strategy: Optimistic update)
+        // Fetch ONE message to send (Optimistic Locking)
         const { data: messageToLock } = await supabase
           .from("campaign_messages")
           .select("id")
@@ -360,8 +384,7 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
 
         if (!messageToLock) {
-          // No more messages in 'aguardando'.
-          // Verify if there are any remaining messages in transient states (double check)
+          // Double check if completely finished
           const { count: remaining } = await supabase
             .from("campaign_messages")
             .select("*", { count: "exact", head: true })
@@ -369,7 +392,6 @@ Deno.serve(async (req: Request) => {
             .in("status", ["aguardando", "sending", "pending"]);
 
           if (remaining === 0) {
-            // If confirmed empty, finalize immediately
             await finalizeCampaign();
           }
 
@@ -387,7 +409,6 @@ Deno.serve(async (req: Request) => {
           .single();
 
         if (lockError || !lockedMessage) {
-          // Could not lock, maybe another worker picked it up
           continue;
         }
 
@@ -422,7 +443,7 @@ Deno.serve(async (req: Request) => {
             throw new Error(result.error || "Failed to send");
           }
 
-          // Success - Update message status
+          // Success
           await supabase
             .from("campaign_messages")
             .update({
@@ -432,9 +453,6 @@ Deno.serve(async (req: Request) => {
             })
             .eq("id", lockedMessage.id);
 
-          // Increment campaign counter via RPC
-          // This should work, but relies on DB transaction integrity which is separate.
-          // The finalizeCampaign sync is the safety net.
           await supabase.rpc("increment_campaign_sent", {
             row_id: campaign.id,
           });
@@ -444,7 +462,6 @@ Deno.serve(async (req: Request) => {
         } catch (err: any) {
           console.error(`Failed to send message ${lockedMessage.id}:`, err);
 
-          // Failure - Update message status
           await supabase
             .from("campaign_messages")
             .update({
@@ -452,8 +469,6 @@ Deno.serve(async (req: Request) => {
               error_message: err.message || "Unknown error",
             })
             .eq("id", lockedMessage.id);
-
-          // We DO NOT increment sent_messages for failed messages
         }
       }
 
@@ -468,7 +483,7 @@ Deno.serve(async (req: Request) => {
     });
   } catch (error) {
     console.error("Process error:", error);
-    // Return 200 OK with success: false to prevent frontend invoke() from throwing
+    // Explicitly returning success: false so frontend can display the error toast
     return new Response(
       JSON.stringify({
         success: false,

@@ -131,16 +131,27 @@ export default function Disparos() {
   const handleResume = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation(); // Prevent row click
     setResumingId(id);
+
     try {
+      if (user) {
+        await campaignsService.checkWhatsappStatus(user.id);
+      }
+
       await campaignsService.resume(id);
-      toast.success("Campanha retomada com sucesso");
+
+      // Trigger queue after resuming
+      await campaignsService.triggerQueue(id);
+
+      toast.success("Campanha retomada e fila de envio iniciada");
       // Optimistic update
       setCampaigns((prev) =>
         prev.map((c) => (c.id === id ? { ...c, status: "active" } : c)),
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Erro ao retomar campanha");
+      toast.error(error.message || "Erro ao retomar campanha");
+      // If error is about connection, maybe revert state or keep it as user preference?
+      // For now, we assume user might fix and try again.
     } finally {
       setResumingId(null);
     }

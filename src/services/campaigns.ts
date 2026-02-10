@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import { Database } from "@/lib/supabase/types";
 import { contactsService } from "./contacts";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 
 export interface Campaign {
   id: string;
@@ -178,23 +179,73 @@ export const campaignsService = {
     if (error) throw error;
   },
 
-  async triggerQueue(campaignId: string) {
-    const { data, error } = await supabase.functions.invoke(
-      "process-campaign-queue",
-      {
-        body: { campaign_id: campaignId },
-      },
-    );
+  async checkWhatsappStatus(userId: string) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(
+        "whatsapp_status, whatsapp_connection_type, webhook_url, evolution_instance_id",
+      )
+      .eq("id", userId)
+      .single();
 
     if (error) throw error;
-    if (data && data.success === false) {
-      throw new Error(data.error || "Erro desconhecido ao processar fila");
+
+    if (data.whatsapp_status !== "CONNECTED") {
+      throw new Error(
+        "WhatsApp não está conectado. Vá em Configurações > Conexão para conectar.",
+      );
     }
-    return data;
+
+    if (data.whatsapp_connection_type === "webhook" && !data.webhook_url) {
+      throw new Error("URL do Webhook não configurada.");
+    }
+
+    if (
+      data.whatsapp_connection_type === "evolution" &&
+      !data.evolution_instance_id
+    ) {
+      throw new Error("Instância Evolution não configurada.");
+    }
+
+    return true;
+  },
+
+  async triggerQueue(campaignId: string) {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "process-campaign-queue",
+        {
+          body: { campaign_id: campaignId },
+        },
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.success === false) {
+        throw new Error(data.error || "Erro desconhecido ao processar fila");
+      }
+      return data;
+    } catch (error) {
+      if (error instanceof FunctionsHttpError) {
+        try {
+          const errorMessage = await error.context.json();
+          throw new Error(
+            errorMessage.error ||
+              "Erro de comunicação com o servidor de envio (Edge Function).",
+          );
+        } catch {
+          throw new Error(
+            "Erro de comunicação com o servidor de envio. Tente novamente.",
+          );
+        }
+      }
+      throw error;
+    }
   },
 
   async generateAiMessages(campaignId: string, promptBase: string) {
-    // Refresh session to ensure we have a valid JWT before invoking
     const {
       data: { session },
       error: sessionError,
@@ -204,8 +255,6 @@ export const campaignsService = {
       throw new Error("Unauthorized: No active session found.");
     }
 
-    // Invoke the edge function with explicit Authorization header
-    // This resolves potential 401 errors by ensuring the latest token is sent
     const { data, error } = await supabase.functions.invoke(
       "generate-ai-messages",
       {
@@ -260,7 +309,9 @@ export const campaignsService = {
           campError,
         );
       }
+      return message.campaign_id;
     }
+    return null;
   },
 
   async deleteMessage(messageId: string) {

@@ -90,22 +90,25 @@ export default function DisparoDetalhes() {
   }, [user, id, fetchCampaignData]);
 
   const handlePauseResume = async () => {
-    if (!campaign) return;
+    if (!campaign || !user) return;
     setActionLoading(true);
     const isPaused = campaign.status === "paused";
 
     try {
       if (isPaused) {
+        // Validate connection before resuming
+        await campaignsService.checkWhatsappStatus(user.id);
+
         await campaignsService.resume(campaign.id);
         toast.success("Campanha retomada com sucesso");
 
         // Trigger background processing immediately
         try {
           await campaignsService.triggerQueue(campaign.id);
-        } catch (queueError) {
+        } catch (queueError: any) {
           console.error("Failed to trigger queue", queueError);
           toast.warning(
-            "A campanha foi retomada, mas o processamento pode demorar um pouco para iniciar.",
+            `A campanha foi retomada, mas o processamento falhou ao iniciar: ${queueError.message}`,
           );
         }
       } else {
@@ -116,17 +119,25 @@ export default function DisparoDetalhes() {
       setCampaign((prev) =>
         prev ? { ...prev, status: isPaused ? "active" : "paused" } : null,
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error(`Erro ao ${isPaused ? "retomar" : "pausar"} campanha`);
+      toast.error(
+        `Erro ao ${isPaused ? "retomar" : "pausar"} campanha: ${error.message || "Erro desconhecido"}`,
+      );
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleRetryMessage = async (messageId: string) => {
+    if (!campaign) return;
     setRetryLoadingId(messageId);
     try {
+      if (user) {
+        // Validate connection before retrying to ensure it can send
+        await campaignsService.checkWhatsappStatus(user.id);
+      }
+
       await campaignsService.retryMessage(messageId);
       toast.success("Mensagem reinserida na fila");
 
@@ -139,8 +150,7 @@ export default function DisparoDetalhes() {
         ),
       );
 
-      // If campaign was finished, we optimistically set it to processing too,
-      // though the subscription will handle it accurately.
+      // If campaign was finished, we optimistically set it to processing too
       setCampaign((prev) => {
         if (prev && prev.status === "finished") {
           return { ...prev, status: "processing" };
@@ -150,15 +160,16 @@ export default function DisparoDetalhes() {
 
       // Trigger background processing immediately
       try {
-        if (campaign) {
-          await campaignsService.triggerQueue(campaign.id);
-        }
-      } catch (queueError) {
+        await campaignsService.triggerQueue(campaign.id);
+      } catch (queueError: any) {
         console.error("Failed to trigger queue", queueError);
+        toast.warning(
+          `Mensagem agendada, mas o processamento falhou ao iniciar: ${queueError.message}`,
+        );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Erro ao tentar reenviar mensagem");
+      toast.error(`Erro ao tentar reenviar mensagem: ${error.message}`);
     } finally {
       setRetryLoadingId(null);
     }
