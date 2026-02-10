@@ -1,6 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+
+export const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers":
+        "authorization, x-client-info, x-supabase-client-platform, apikey, content-type",
+};
 
 const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL");
 const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
@@ -11,28 +17,42 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader) {
+            return new Response(JSON.stringify({ error: "No authorization header" }), {
+                status: 401,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+
         const supabaseClient = createClient(
             Deno.env.get("SUPABASE_URL") ?? "",
             Deno.env.get("SUPABASE_ANON_KEY") ?? "",
             {
                 global: {
-                    headers: { Authorization: req.headers.get("Authorization")! },
+                    headers: { Authorization: authHeader },
                 },
             }
         );
 
         const {
             data: { user },
+            error: userError
         } = await supabaseClient.auth.getUser();
 
-        if (!user) throw new Error("Unauthorized");
+        if (userError || !user) {
+            return new Response(JSON.stringify({ error: "Unauthorized", details: userError?.message }), {
+                status: 401,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
 
         const body = await req.json().catch(() => ({}));
         const { action } = body;
         const instanceName = `user_${user.id.replace(/-/g, "_")}`;
 
         if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-            throw new Error("Evolution API configuration missing");
+            throw new Error("Evolution API configuration missing in Edge Function secrets (EVOLUTION_API_URL / EVOLUTION_API_KEY)");
         }
 
         let result;
@@ -89,7 +109,6 @@ Deno.serve(async (req: Request) => {
                 .eq("id", user.id);
 
         } else if (action === "logout") {
-            // Trying DELETE first, then POST if it fails (common in different Evolution versions)
             let response = await fetch(`${EVOLUTION_API_URL}/instance/logout/${instanceName}`, {
                 method: "DELETE",
                 headers: {
@@ -124,6 +143,7 @@ Deno.serve(async (req: Request) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     } catch (error) {
+        console.error("Function error:", error.message);
         return new Response(JSON.stringify({ error: error.message }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
