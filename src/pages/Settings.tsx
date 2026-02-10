@@ -99,7 +99,8 @@ export default function Settings() {
           name: profile.name || "",
           email: user.email || "",
           webhook_url: profile.webhook_url || "",
-          whatsapp_connection_type: profile.whatsapp_connection_type || "webhook",
+          whatsapp_connection_type:
+            profile.whatsapp_connection_type || "webhook",
         });
         setWhatsappStatus(profile.whatsapp_status || "disconnected");
         if (profile.avatar_url) {
@@ -255,12 +256,12 @@ export default function Settings() {
 
   const userInitials = form.getValues("name")
     ? form
-      .getValues("name")
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+        .getValues("name")
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
     : user.email?.substring(0, 2).toUpperCase();
 
   return (
@@ -392,11 +393,18 @@ export default function Settings() {
                           className="w-full"
                         >
                           <TabsList className="grid w-full grid-cols-2 mb-6">
-                            <TabsTrigger value="webhook">Webhook (n8n)</TabsTrigger>
-                            <TabsTrigger value="evolution">WhatsApp Nativo (Cloudfy)</TabsTrigger>
+                            <TabsTrigger value="webhook">
+                              Webhook (n8n)
+                            </TabsTrigger>
+                            <TabsTrigger value="evolution">
+                              WhatsApp Nativo (Cloudfy)
+                            </TabsTrigger>
                           </TabsList>
 
-                          <TabsContent value="webhook" className="space-y-6 animate-in fade-in-50 duration-300">
+                          <TabsContent
+                            value="webhook"
+                            className="space-y-6 animate-in fade-in-50 duration-300"
+                          >
                             <FormField
                               control={form.control}
                               name="webhook_url"
@@ -418,9 +426,12 @@ export default function Settings() {
                                       </DialogTrigger>
                                       <DialogContent className="max-w-md">
                                         <DialogHeader>
-                                          <DialogTitle>Configuração do n8n</DialogTitle>
+                                          <DialogTitle>
+                                            Configuração do n8n
+                                          </DialogTitle>
                                           <DialogDescription>
-                                            Siga os passos abaixo para integrar o sistema com seu n8n.
+                                            Siga os passos abaixo para integrar
+                                            o sistema com seu n8n.
                                           </DialogDescription>
                                         </DialogHeader>
                                         <div className="space-y-6 py-4">
@@ -429,12 +440,24 @@ export default function Settings() {
                                               <Download className="w-4 h-4" />
                                             </div>
                                             <div>
-                                              <p className="font-semibold text-base">1. Baixe o Workflow</p>
-                                              <p className="text-sm text-muted-foreground mb-3">
-                                                Faça o download do arquivo JSON pronto para importar no seu n8n.
+                                              <p className="font-semibold text-base">
+                                                1. Baixe o Workflow
                                               </p>
-                                              <Button variant="default" size="sm" asChild className="w-full sm:w-auto">
-                                                <a href="/n8n_workflow.json" download="n8n_workflow.json" className="flex items-center justify-center gap-2">
+                                              <p className="text-sm text-muted-foreground mb-3">
+                                                Faça o download do arquivo JSON
+                                                pronto para importar no seu n8n.
+                                              </p>
+                                              <Button
+                                                variant="default"
+                                                size="sm"
+                                                asChild
+                                                className="w-full sm:w-auto"
+                                              >
+                                                <a
+                                                  href="/n8n_workflow.json"
+                                                  download="n8n_workflow.json"
+                                                  className="flex items-center justify-center gap-2"
+                                                >
                                                   <Download className="w-4 h-4" />
                                                   Download JSON para n8n
                                                 </a>
@@ -446,9 +469,17 @@ export default function Settings() {
                                               <Upload className="w-4 h-4" />
                                             </div>
                                             <div>
-                                              <p className="font-semibold text-base">2. Importe no n8n</p>
+                                              <p className="font-semibold text-base">
+                                                2. Importe no n8n
+                                              </p>
                                               <p className="text-sm text-muted-foreground">
-                                                No seu painel n8n, crie um novo workflow e use a opção <span className="font-medium text-foreground italic">"Import from File"</span> no menu para selecionar o JSON que você baixou.
+                                                No seu painel n8n, crie um novo
+                                                workflow e use a opção{" "}
+                                                <span className="font-medium text-foreground italic">
+                                                  "Import from File"
+                                                </span>{" "}
+                                                no menu para selecionar o JSON
+                                                que você baixou.
                                               </p>
                                             </div>
                                           </div>
@@ -457,9 +488,16 @@ export default function Settings() {
                                               <ExternalLink className="w-4 h-4" />
                                             </div>
                                             <div>
-                                              <p className="font-semibold text-base">3. Configure a Conexão</p>
+                                              <p className="font-semibold text-base">
+                                                3. Configure a Conexão
+                                              </p>
                                               <p className="text-sm text-muted-foreground">
-                                                Abra o nó chamado <span className="text-foreground font-bold font-mono">"Whatsapp"</span>. Lá você precisará inserir seus dados da API.
+                                                Abra o nó chamado{" "}
+                                                <span className="text-foreground font-bold font-mono">
+                                                  "Whatsapp"
+                                                </span>
+                                                . Lá você precisará inserir seus
+                                                dados da API.
                                               </p>
                                             </div>
                                           </div>
@@ -475,7 +513,8 @@ export default function Settings() {
                                     />
                                   </FormControl>
                                   <FormDescription>
-                                    Cole aqui a URL do Webhook gerada pelo seu n8n.
+                                    Cole aqui a URL do Webhook gerada pelo seu
+                                    n8n.
                                   </FormDescription>
                                   <FormMessage />
                                 </FormItem>
@@ -483,67 +522,125 @@ export default function Settings() {
                             />
                           </TabsContent>
 
-                          <TabsContent value="evolution" className="space-y-6 animate-in fade-in-50 duration-300">
+                          <TabsContent
+                            value="evolution"
+                            className="space-y-6 animate-in fade-in-50 duration-300"
+                          >
                             <div className="bg-muted/30 border rounded-xl p-6">
                               <div className="flex flex-col items-center text-center space-y-4">
                                 <div className="flex items-center gap-3">
-                                  <div className={`p-2 rounded-full ${whatsappStatus === 'connected' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
-                                    {whatsappStatus === 'connected' ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                                  <div
+                                    className={`p-2 rounded-full ${whatsappStatus === "connected" ? "bg-green-100 text-green-600" : "bg-orange-100 text-orange-600"}`}
+                                  >
+                                    {whatsappStatus === "connected" ? (
+                                      <CheckCircle2 className="w-6 h-6" />
+                                    ) : (
+                                      <XCircle className="w-6 h-6" />
+                                    )}
                                   </div>
                                   <div>
-                                    <p className="font-semibold text-lg capitalize">{whatsappStatus === 'connected' ? 'Conectado' : 'Desconectado'}</p>
-                                    <p className="text-sm text-muted-foreground">Via Evolution API v2 (Cloudfy)</p>
+                                    <p className="font-semibold text-lg capitalize">
+                                      {whatsappStatus === "connected"
+                                        ? "Conectado"
+                                        : "Desconectado"}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Via Evolution API v2 (Cloudfy)
+                                    </p>
                                   </div>
                                 </div>
 
-                                {whatsappStatus === 'disconnected' && !qrCode && (
-                                  <div className="py-4">
-                                    <Button
-                                      type="button"
-                                      onClick={handleCreateInstance}
-                                      disabled={checkingStatus}
-                                      className="flex items-center gap-2"
-                                    >
-                                      {checkingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
-                                      Gerar QR Code para Conectar
-                                    </Button>
-                                    <p className="text-xs text-muted-foreground mt-2 italic px-8">
-                                      Isso criará uma instância exclusiva para seu usuário e gerará o QR Code para pareamento.
-                                    </p>
-                                  </div>
-                                )}
+                                {whatsappStatus === "disconnected" &&
+                                  !qrCode && (
+                                    <div className="py-4">
+                                      <Button
+                                        type="button"
+                                        onClick={handleCreateInstance}
+                                        disabled={checkingStatus}
+                                        className="flex items-center gap-2"
+                                      >
+                                        {checkingStatus ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <QrCode className="w-4 h-4" />
+                                        )}
+                                        Gerar QR Code para Conectar
+                                      </Button>
+                                      <p className="text-xs text-muted-foreground mt-2 italic px-8">
+                                        Isso criará uma instância exclusiva para
+                                        seu usuário e gerará o QR Code para
+                                        pareamento.
+                                      </p>
+                                    </div>
+                                  )}
 
-                                {qrCode && whatsappStatus !== 'connected' && (
+                                {qrCode && whatsappStatus !== "connected" && (
                                   <div className="flex flex-col items-center space-y-4 py-2">
                                     <div className="bg-white p-4 rounded-xl border-2 border-primary/20 shadow-sm relative group">
-                                      <img src={qrCode} alt="WhatsApp QR Code" className="w-48 h-48" />
+                                      <img
+                                        src={qrCode}
+                                        alt="WhatsApp QR Code"
+                                        className="w-48 h-48"
+                                      />
                                       <div className="absolute inset-0 bg-white/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
-                                        <Button variant="ghost" size="sm" onClick={handleGetQR} className="bg-white/80 hover:bg-white border">
-                                          <RefreshCw className="w-4 h-4 mr-2" /> Atualizar
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={handleGetQR}
+                                          className="bg-white/80 hover:bg-white border"
+                                        >
+                                          <RefreshCw className="w-4 h-4 mr-2" />{" "}
+                                          Atualizar
                                         </Button>
                                       </div>
                                     </div>
                                     <div className="flex flex-col items-center gap-2">
-                                      <p className="text-sm font-medium animate-pulse text-primary">Aguardando leitura do QR Code...</p>
-                                      <Button variant="outline" size="sm" onClick={handleCheckStatus} disabled={checkingStatus}>
-                                        {checkingStatus ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                                      <p className="text-sm font-medium animate-pulse text-primary">
+                                        Aguardando leitura do QR Code...
+                                      </p>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleCheckStatus}
+                                        disabled={checkingStatus}
+                                      >
+                                        {checkingStatus ? (
+                                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                        ) : (
+                                          <RefreshCw className="w-4 h-4 mr-2" />
+                                        )}
                                         Verificar Status agora
                                       </Button>
                                     </div>
                                   </div>
                                 )}
 
-                                {whatsappStatus === 'connected' && (
+                                {whatsappStatus === "connected" && (
                                   <div className="py-4 flex flex-col items-center gap-4">
                                     <div className="bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm font-medium border border-green-200 flex items-center gap-2">
-                                      <CheckCircle2 className="w-4 h-4" /> Seu WhatsApp está pronto para uso!
+                                      <CheckCircle2 className="w-4 h-4" /> Seu
+                                      WhatsApp está pronto para uso!
                                     </div>
                                     <div className="flex gap-2">
-                                      <Button variant="outline" size="sm" onClick={handleCheckStatus} disabled={checkingStatus}>
-                                        <RefreshCw className={`w-4 h-4 mr-2 ${checkingStatus ? 'animate-spin' : ''}`} /> Sincronizar
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleCheckStatus}
+                                        disabled={checkingStatus}
+                                      >
+                                        <RefreshCw
+                                          className={`w-4 h-4 mr-2 ${checkingStatus ? "animate-spin" : ""}`}
+                                        />{" "}
+                                        Sincronizar
                                       </Button>
-                                      <Button variant="destructive" size="sm" onClick={handleLogout} disabled={checkingStatus}>
-                                        <LogOut className="w-4 h-4 mr-2" /> Desconectar
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={handleLogout}
+                                        disabled={checkingStatus}
+                                      >
+                                        <LogOut className="w-4 h-4 mr-2" />{" "}
+                                        Desconectar
                                       </Button>
                                     </div>
                                   </div>

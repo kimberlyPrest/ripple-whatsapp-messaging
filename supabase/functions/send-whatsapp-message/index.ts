@@ -25,24 +25,29 @@ Deno.serve(async (req: Request) => {
 
     if (connectionType === "evolution" && evolutionInstanceId) {
       if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-        throw new Error("Evolution API configuration missing in Edge Function secrets");
+        throw new Error(
+          "Evolution API configuration missing in Edge Function secrets",
+        );
       }
 
       // Sanitize phone for Evolution (remove +, etc if needed, but usually it takes full number)
       const sanitizedPhone = phone.replace(/\D/g, "");
 
-      const response = await fetch(`${EVOLUTION_API_URL}/message/sendText/${evolutionInstanceId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: EVOLUTION_API_KEY,
+      const response = await fetch(
+        `${EVOLUTION_API_URL}/message/sendText/${evolutionInstanceId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: EVOLUTION_API_KEY,
+          },
+          body: JSON.stringify({
+            number: sanitizedPhone,
+            text: message,
+            linkPreview: false,
+          }),
         },
-        body: JSON.stringify({
-          number: sanitizedPhone,
-          text: message,
-          linkPreview: false,
-        }),
-      });
+      );
 
       if (!response.ok) {
         const errText = await response.text();
@@ -53,7 +58,6 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: true, data }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-
     } else {
       // DEFAULT: WEBHOOK
       const webhookUrl =
