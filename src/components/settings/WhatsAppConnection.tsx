@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Smartphone, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { profileService, ProfileData } from "@/services/profile";
@@ -138,34 +137,43 @@ export function WhatsAppConnection({ profile }: { profile: ProfileData }) {
               <div>
                 <h3 className="font-semibold mb-4 text-lg">Como conectar?</h3>
                 <ol className="space-y-4 text-sm text-muted-foreground">
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs">
+                  <li className="flex gap-3 items-start">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs mt-0.5">
                       1
                     </span>
-                    Abra o WhatsApp no seu aparelho celular.
+                    <p>Abra o WhatsApp no seu aparelho celular.</p>
                   </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs">
+                  <li className="flex gap-3 items-start">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs mt-0.5">
                       2
                     </span>
-                    Toque em <strong className="text-foreground">Menu</strong>{" "}
-                    ou{" "}
-                    <strong className="text-foreground">Configurações</strong> e
-                    selecione{" "}
-                    <strong className="text-foreground">
-                      Aparelhos conectados
-                    </strong>
-                    .
+                    <p>
+                      Toque em{" "}
+                      <strong className="font-bold text-foreground">
+                        Menu
+                      </strong>{" "}
+                      ou{" "}
+                      <strong className="font-bold text-foreground">
+                        Configurações
+                      </strong>{" "}
+                      e selecione{" "}
+                      <strong className="font-bold text-foreground">
+                        Aparelhos conectados
+                      </strong>
+                      .
+                    </p>
                   </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs">
+                  <li className="flex gap-3 items-start">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs mt-0.5">
                       3
                     </span>
-                    Toque em{" "}
-                    <strong className="text-foreground">
-                      Conectar um aparelho
-                    </strong>{" "}
-                    e aponte seu celular para esta tela.
+                    <p>
+                      Toque em{" "}
+                      <strong className="font-bold text-foreground">
+                        Conectar um aparelho
+                      </strong>{" "}
+                      e aponte seu celular para esta tela.
+                    </p>
                   </li>
                 </ol>
               </div>
