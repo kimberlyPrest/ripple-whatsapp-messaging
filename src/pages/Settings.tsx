@@ -53,7 +53,7 @@ export default function Settings() {
       {profile && (
         <>
           <ProfileCard profile={profile} onUpdate={loadProfile} />
-          <WhatsAppConnection profile={profile} />
+          <WhatsAppConnection profile={profile} onUpdate={loadProfile} />
         </>
       )}
     </div>

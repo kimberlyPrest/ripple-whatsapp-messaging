@@ -63,6 +63,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const serviceRoleClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+
     let result;
     const targetUrl =
       action === "create"
@@ -73,7 +78,9 @@ Deno.serve(async (req: Request) => {
             ? `${EVOLUTION_API_URL}/instance/connectionState/${instanceName}`
             : action === "logout"
               ? `${EVOLUTION_API_URL}/instance/logout/${instanceName}`
-              : "";
+              : action === "get-info"
+                ? `${EVOLUTION_API_URL}/instance/fetchInstances`
+                : "";
 
     console.log(`Action: ${action} | Target URL: ${targetUrl}`);
 
@@ -85,8 +92,6 @@ Deno.serve(async (req: Request) => {
         integration: "WHATSAPP-BAILEYS",
       };
 
-      console.log("Creating instance with body:", JSON.stringify(createBody));
-
       const response = await fetch(targetUrl, {
         method: "POST",
         headers: {
@@ -97,10 +102,6 @@ Deno.serve(async (req: Request) => {
       });
 
       result = await response.json();
-      console.log(
-        `Creation response (${response.status}):`,
-        JSON.stringify(result),
-      );
 
       if (!response.ok) {
         throw new Error(
@@ -108,10 +109,6 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const serviceRoleClient = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      );
       await serviceRoleClient
         .from("profiles")
         .update({ evolution_instance_id: instanceName })
@@ -135,13 +132,23 @@ Deno.serve(async (req: Request) => {
 
       const status =
         result.instance?.state === "open" ? "connected" : "disconnected";
-      const serviceRoleClient = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      );
+
+      const { data: profile } = await serviceRoleClient
+        .from("profiles")
+        .select("whatsapp_status, whatsapp_connected_at")
+        .eq("id", user.id)
+        .single();
+
+      const updates: any = { whatsapp_status: status };
+
+      // If becoming connected and no timestamp exists, set it
+      if (status === "connected" && !profile?.whatsapp_connected_at) {
+        updates.whatsapp_connected_at = new Date().toISOString();
+      }
+
       await serviceRoleClient
         .from("profiles")
-        .update({ whatsapp_status: status })
+        .update(updates)
         .eq("id", user.id);
     } else if (action === "logout") {
       let response = await fetch(targetUrl, {
@@ -152,8 +159,9 @@ Deno.serve(async (req: Request) => {
       });
 
       if (!response.ok) {
+        // Fallback or retry if needed, but usually delete is final
         response = await fetch(targetUrl, {
-          method: "POST",
+          method: "POST", // Some versions use POST for logout
           headers: {
             apikey: EVOLUTION_API_KEY,
           },
@@ -162,14 +170,46 @@ Deno.serve(async (req: Request) => {
 
       result = await response.json();
 
-      const serviceRoleClient = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      );
       await serviceRoleClient
         .from("profiles")
-        .update({ whatsapp_status: "disconnected" })
+        .update({
+          whatsapp_status: "disconnected",
+          whatsapp_connected_at: null,
+        })
         .eq("id", user.id);
+    } else if (action === "get-info") {
+      // Fetch all instances and find the one matching the user
+      const response = await fetch(targetUrl, {
+        method: "GET",
+        headers: {
+          apikey: EVOLUTION_API_KEY,
+        },
+      });
+
+      const instances = await response.json();
+
+      let instanceInfo = null;
+      if (Array.isArray(instances)) {
+        instanceInfo = instances.find(
+          (i: any) =>
+            i.instance?.instanceName === instanceName ||
+            i.name === instanceName,
+        );
+      }
+
+      if (instanceInfo) {
+        // Normalize structure
+        result = {
+          profilePictureUrl:
+            instanceInfo.profilePictureUrl ||
+            instanceInfo.instance?.profilePictureUrl,
+          owner: instanceInfo.owner || instanceInfo.instance?.owner,
+          profileName:
+            instanceInfo.profileName || instanceInfo.instance?.profileName,
+        };
+      } else {
+        result = null;
+      }
     } else {
       throw new Error(`Invalid action: ${action}`);
     }
